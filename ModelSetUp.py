@@ -126,6 +126,7 @@ class OptModelSetUp():
     #add gen/pump
         self.psh_gen = self.add_var_psh('psh_gen_main')
         self.psh_pump = self.add_var_psh('psh_pump_main')
+        #这里需要很多个？？？该怎么写？
 
     # add e
         self.e = self.add_var_e('e_main')
@@ -166,14 +167,23 @@ class OptModelSetUp():
         self.gur_model.update()
 
     def set_up_object(self):
+        # self.profit_max = []
+        # for j in self.psh_system.parameter['PSHName']:
+        #     self.profit_max.append((self.psh_gen[j] - self.psh_pump[j]) * self.lmp.lmp_scenarios[0][0])
+        # for k in self.e_system.parameter['EName']:
+        #     for i in range(self.curve.numbers):
+        #         bench_num = i
+        #         #self.profit_max.append(self.curve.point_Y[bench_num] * self.soc[bench_num][k])
+        #         #curve如果是[soc=0, slope=10],[soc=30,slope=20], 从0-30,slope为30
+        #         self.profit_max.append(self.curve.point_Y[bench_num + 1] * self.soc[bench_num ][k])
+        # print(self.profit_max)
+        # self.obj = quicksum(self.profit_max)
         self.profit_max = []
         for j in self.psh_system.parameter['PSHName']:
             self.profit_max.append((self.psh_gen[j] - self.psh_pump[j]) * self.lmp.lmp_scenarios[0][0])
         for k in self.e_system.parameter['EName']:
             for i in range(self.curve.numbers):
                 bench_num = i
-                #self.profit_max.append(self.curve.point_Y[bench_num] * self.soc[bench_num][k])
-                #curve如果是[soc=0, slope=10],[soc=30,slope=20], 从0-30,slope为30
                 self.profit_max.append(self.curve.point_Y[bench_num + 1] * self.soc[bench_num ][k])
         print(self.profit_max)
         self.obj = quicksum(self.profit_max)

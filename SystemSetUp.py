@@ -190,6 +190,9 @@ class LMP(System):
         self.filename = None
         self.Output_folder = None
 
+    def seven_days_predict_set_up_parameter(self):
+        
+
 
 
 
