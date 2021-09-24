@@ -395,16 +395,6 @@ class RL_Kernel():
             self.new_curve_slope.append(_temp) #this is the new slope we need
         print(self.new_curve_slope)
 
-        # make sure it is convex
-        # 注意一边是保持边界的所有是非常大或者非常小,同时要保持slope下降
-        # for i in range(len(self.new_curve_slope)):
-        #     # 保持slope下降
-        #     if i == self.left + 1:
-        #         if self.new_curve_slope[i] > self.new_curve_slope[self.left]:
-        #             self.new_curve_slope[i] = self.new_curve_slope[self.left]
-        #     elif self.left + 1 < i <= self.right:
-        #         if self.new_curve_slope[i] > self.new_curve_slope[i - 1]:
-        #             self.new_curve_slope[i] = self.new_curve_slope[i - 1]
 
     def get_new_curve_step_3_two_pts(self):
         #need find another point #be careful boundary case
@@ -446,64 +436,10 @@ class RL_Kernel():
             self.update_point_2_x = self.update_point_1_x
             self.update_point_2_y = self.update_point_1_y
 
-        #用convex
-        #alpha = 0.8
-        #self.update_point_1_y = (1 - alpha) * (self.calculate_pts(self.update_point_1_x)- self.calculate_pts(self.update_point_1_x-1)) + alpha * self.update_point_1_y
-        #self.update_point_2_y = (1 - alpha) * (self.calculate_pts(self.update_point_2_x)- self.calculate_pts(self.update_point_2_x-1)) + alpha * self.update_point_2_y
 
         self.update_point_1 = [self.update_point_1_x, self.update_point_1_y]
         self.update_point_2 = [self.update_point_2_x, self.update_point_2_y]
 
-        #four points: previous_point, optimal_soc, second_point,
-        # if self.optimal_soc_sum + 1 > self.curve.up_bd:
-        #     self.second_point_soc_sum = self.optimal_soc_sum - 1  #self.curve.steps
-        #     self.second_point_profit = self.calculate_new_soc(self.second_point_soc_sum)
-        # else:
-        #     self.second_point_soc_sum = self.optimal_soc_sum + 1  #self.curve.steps
-        #     self.second_point_profit = self.calculate_new_soc(self.second_point_soc_sum)
-        #
-        # # get previous point profit
-        # if self.optimal_soc_sum - 1 < self.curve.lo_bd:
-        #     self.previous_point_soc_sum = self.optimal_soc_sum + 1 #self.curve.steps
-        #     self.previous_point_profit = self.calculate_new_soc(self.previous_point_soc_sum)
-        # else:
-        #     self.previous_point_soc_sum = self.optimal_soc_sum - 1 #self.curve.steps
-        #     self.previous_point_profit = self.calculate_new_soc(self.previous_point_soc_sum)
-        # # shall we get the optimal at previous???
-        # self.pre_scen_optimal_profit = self.calculate_new_soc(self.optimal_soc_sum)
-        #
-        # #calcuate self.update_point_1/2(point_x, point_curve)
-        # if self.optimal_soc_sum + 1 > self.curve.up_bd:
-        #     # self.optimal_profit and self.optimal_soc_sum
-        #     self.update_point_1_x = self.optimal_soc_sum
-        #     self.update_point_1_y = (self.pre_scen_optimal_profit - self.previous_point_profit) #self.curve.steps
-        #     #
-        #     self.update_point_2_x = self.optimal_soc_sum
-        #     self.update_point_2_y = (self.pre_scen_optimal_profit - self.previous_point_profit) #self.curve.steps
-        #
-        # elif self.optimal_soc_sum - 1 < self.curve.lo_bd:
-        #     #self.optimal_profit and self.optimal_soc_sum
-        #     self.update_point_1_x = self.optimal_soc_sum
-        #     self.update_point_1_y = (self.second_point_profit - self.pre_scen_optimal_profit) #self.curve.steps
-        #     ##这里写错了，到底是update前面的点，还是这个点？
-        #     self.update_point_2_x = self.optimal_soc_sum
-        #     self.update_point_2_y = (self.second_point_profit - self.pre_scen_optimal_profit) #self.curve.steps
-        # else:
-        #     self.update_point_1_x = self.optimal_soc_sum
-        #     self.update_point_1_y = (self.pre_scen_optimal_profit - self.previous_point_profit) #self.curve.steps
-        #     self.update_point_2_x = self.second_point_soc_sum
-        #     self.update_point_2_y = (self.second_point_profit - self.pre_scen_optimal_profit) #self.curve.steps
-        # self.update_point_1 = [self.update_point_1_x, self.update_point_1_y]
-        # self.update_point_2 = [self.update_point_2_x, self.update_point_2_y]
-
-
-    # def get_new_curve_step_5_curve_comb(self):
-    # #new curve combine with the old_slope
-    #     self.new_curve_slope = []
-    #     for i in range(len(self.second_curve_soc)):
-    #         _temp = (1 - self.alpha)*self.old_curve.point_Y[i] + self.alpha*self.second_curve_slope[i]
-    #         self.new_curve_slope.append(_temp) #this is the new slope we need
-    #     print(self.new_curve_slope)
 
 
 

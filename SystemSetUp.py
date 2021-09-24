@@ -190,35 +190,21 @@ class LMP(System):
         self.filename = None
         self.Output_folder = None
 
-    def seven_days_predict_set_up_parameter(self):
-        
+    def set_up_parameter_previous(self):
 
+        self.lmp_quantiles_prev = [[]]
+        self.lmp_scenarios_prev = [[]]
+        for i in range(23):
+            self.filename = '??????'
+            Data = pd.read_csv(self.filename)
+            df = pd.DataFrame(Data)
+            Column_name = list(Data.columns)
+            # DA_lmp=[]???
+            self.Nlmp_s = 1
+            self.lmp_quantiles_prev[i].append(1.0 / self.Nlmp_s)
+            read_curr = (self.curr_model.scenario - 1)
+            self.lmp_scenarios_prev[i].append(list(df[Column_name[read_curr]]))
 
-
-
-
-#
-# psh_folder_info = Folder_Info(Input_folder_parent, Output_folder, curr_model)
-# Curr_Model(LAC_last_windows是否是最后,  probabilistic是否是随机模型, RT_DA是否是RT, date, LAC_bhour开始时间)
-#
-
-# psh_model = CurrModelPara(1, 0 , 1,'March 07 2019', 1,1)   ##first is for last window second are stochastic, third is for the date, last is for hour
-# psh_system = PshSystem(psh_model)
-# psh_system.set_up_parameter()
-# psh_system.parameter['EStart']= 1000000
-# print(psh_system.parameter)
-#
-# e_model = CurrModelPara(1, 0 ,1, 'March 07 2019', 1,1)   ##first is for last window second are stochastic, third is for the date, last is for hour
-# e_system = ESystem(e_model)
-# e_system.set_up_parameter()
-# print(e_system.parameter)
-#
-#
-# lmp_model = CurrModelPara(1, 0 ,1, 'March 07 2019', 1, 1)
-# print(lmp_model.date)  ##first is for last window second are stochastic, third is for the date, last is for hour
-# lmp = LMP(lmp_model)
-# lmp.set_up_parameter()
-# print(lmp.lmp_quantiles)
 
 
 
