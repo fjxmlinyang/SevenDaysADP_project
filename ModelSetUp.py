@@ -44,14 +44,31 @@ class OptModelSetUp():
 
     def add_constraint_rolling(self):
         ## SOC0: e_0=E_start; loop from 0 to 22; e_1=e_0+psh1;....e_23=e_22+psh_23; when loop to 22; directly add e_23=E_end
+        
+
+        #注意你的结尾的psh的左右分别是哪些？
         for k in self.e_system.parameter['EName']:
             print('Estart:', float(self.e_system.parameter['EStart']))
             LHS = self.e[k] + grb.quicksum(self.psh_gen[j] / self.psh_system.parameter['GenEfficiency'] for j in self.psh_system.parameter['PSHName']) \
                                           - grb.quicksum(self.psh_pump[j] * self.psh_system.parameter['PumpEfficiency'] for j in self.psh_system.parameter['PSHName'])
-            RHS = self.e_system.parameter['EStart']
+            RHS = self.e_prev[i-1] #self.e_system.parameter['EStart']
             print(LHS)
             ###if we calculate the first one, we use 'SOC0', and the last we use 'End'; or we choose the SOC0 to "beginning", at the same time the last we use 'SOC'.
             self.gur_model.addConstr(LHS == RHS, name='%s_%s' % ('SOC0', k))
+        #注意你的psh是哪一个？
+        for i in range(self.LAC_period-1):
+            if i == 0:
+                LHS = self.e_prev[i] + grb.quicksum(self.psh_gen_prev[] / self.psh_system.parameter['GenEfficiency'] for j in self.psh_system.parameter['PSHName']) \
+                                              - grb.quicksum(self.psh_pump_prev[i] * self.psh_system.parameter['PumpEfficiency'] for j in self.psh_system.parameter['PSHName'])
+                RHS = self.e_system.parameter['EStart']
+                self.gur_model.addConstr(LHS == RHS, name='%s_%s' % ('SOC0', i))
+            else: 
+                LHS = self.e_prev[i] + grb.quicksum(self.psh_gen_prev[] / self.psh_system.parameter['GenEfficiency'] for j in self.psh_system.parameter['PSHName']) \
+                                              - grb.quicksum(self.psh_pump_prev[i] * self.psh_system.parameter['PumpEfficiency'] for j in self.psh_system.parameter['PSHName'])
+                RHS = self.e_prev[i-1]
+                self.gur_model.addConstr(LHS == RHS, name='%s_%s' % ('SOC0', i))
+
+
 
 
     def add_constraint_epsh(self):
