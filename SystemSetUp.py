@@ -191,22 +191,32 @@ class LMP(System):
         self.Output_folder = None
 
     def set_up_parameter_previous(self):
+        #self.lmp_quantiles_prev[i][j]是关于第i小时，第j个scenario得
+        self.lmp_quantiles_prev = []
 
-        self.lmp_quantiles_prev = [[]]
-        self.lmp_scenarios_prev = [[]]
+        self.lmp_scenarios_prev = []
         for i in range(23):
-            self.filename = '??????'
+            temp_lmp_quantile_prev = []
+            temp_lmp_scenarios_prev = []
+            self.filename = './Scenarios_Prediction/DECO_Scenarios_Week_of_WindSolLoad_October 15 2019_Till_Day1_30daysTrain.csv'
             Data = pd.read_csv(self.filename)
             df = pd.DataFrame(Data)
             Column_name = list(Data.columns)
             # DA_lmp=[]???
             self.Nlmp_s = 1
-            self.lmp_quantiles_prev[i].append(1.0 / self.Nlmp_s)
+            temp_lmp_quantile_prev.append(1.0 / self.Nlmp_s)
             read_curr = (self.curr_model.scenario - 1)
-            self.lmp_scenarios_prev[i].append(list(df[Column_name[read_curr]]))
+            temp_lmp_scenarios_prev.append(list(df[Column_name[read_curr]]))
+            self.lmp_quantiles_prev.append(temp_lmp_quantile_prev)
+            self.lmp_scenarios_prev.append(temp_lmp_scenarios_prev)
 
 
 
+test_1=CurrModelPara(1, 1, 1, 'April', 1, 5, 'sample', 23)        # LAC_last_windows,  probabilistic, RT_DA, date, LAC_bhour, scenario
+
+test = LMP(test_1)
+
+test.set_up_parameter_previous()
 
 
 

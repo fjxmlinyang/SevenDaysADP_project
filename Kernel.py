@@ -27,7 +27,7 @@ class RL_Kernel():
         self.time_period = 23 #24? #24-1?
 
     def main_function(self):
-        time_1 = time.time()
+        #time_1 = time.time()
         self.Curr_Scenario_Cost_Total = []
         if self.date =='March 07 2019':
             self.start = 1+1
@@ -55,8 +55,8 @@ class RL_Kernel():
                 self.output_psh_soc()
             self.output_psh_soc_main()
         self.output_curr_cost()
-        time_2 = time.time()
-        print('one iteration time is', time_2-time_1)
+        #time_2 = time.time()
+        #print('one iteration time is', time_2-time_1)
 
 
     def output_curr_cost(self):
@@ -151,6 +151,7 @@ class RL_Kernel():
         print('################################## lmp_system set up ##################################')
         self.lmp = LMP(self.curr_model_para)
         self.lmp.set_up_parameter()
+        self.lmp.set_up_parameter_previous()
         #print(self.lmp.date)
         print('lmp_quantiles=', self.lmp.lmp_quantiles)
         print('lmp_scenarios=', self.lmp.lmp_scenarios)
