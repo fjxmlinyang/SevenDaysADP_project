@@ -43,32 +43,28 @@ class OptModelSetUp():
 
 
     def add_constraint_rolling(self):
-        ## SOC0: e_0=E_start; loop from 0 to 22; e_1=e_0+psh1;....e_23=e_22+psh_23; when loop to 22; directly add e_23=E_end
-        
-
-        #注意你的结尾的psh的左右分别是哪些？
+        print(type(self.e_prev[0]))
+        print(type(self.e_system.parameter['EStart']))
+        print(type(self.e['Reservoir1']))
         for k in self.e_system.parameter['EName']:
-            print('Estart:', float(self.e_system.parameter['EStart']))
+            for i in range(self.LAC_period-1):
+                if i == 0:
+                    LHS = self.e_prev[i][k] + grb.quicksum(self.psh_gen_prev[i][j] / self.psh_system.parameter['GenEfficiency'] for j in self.psh_system.parameter['PSHName']) \
+                                                  - grb.quicksum(self.psh_pump_prev[i][j] * self.psh_system.parameter['PumpEfficiency'] for j in self.psh_system.parameter['PSHName'])
+                    RHS = self.e_system.parameter['EStart']
+                    self.gur_model.addConstr(LHS == RHS, name='%s_%s' % ('SOC', i))
+                else:
+                    LHS = self.e_prev[i][k] + grb.quicksum(self.psh_gen_prev[i][j] / self.psh_system.parameter['GenEfficiency'] for j in self.psh_system.parameter['PSHName']) \
+                                                  - grb.quicksum(self.psh_pump_prev[i][j] * self.psh_system.parameter['PumpEfficiency'] for j in self.psh_system.parameter['PSHName'])
+                    RHS = self.e_prev[i-1][k]
+                    self.gur_model.addConstr(LHS == RHS, name='%s_%s' % ('SOC', i))
+
+        for k in self.e_system.parameter['EName']:
             LHS = self.e[k] + grb.quicksum(self.psh_gen[j] / self.psh_system.parameter['GenEfficiency'] for j in self.psh_system.parameter['PSHName']) \
                                           - grb.quicksum(self.psh_pump[j] * self.psh_system.parameter['PumpEfficiency'] for j in self.psh_system.parameter['PSHName'])
-            RHS = self.e_prev[i-1] #self.e_system.parameter['EStart']
-            print(LHS)
+            RHS = self.e_prev[self.LAC_period-1][k]
             ###if we calculate the first one, we use 'SOC0', and the last we use 'End'; or we choose the SOC0 to "beginning", at the same time the last we use 'SOC'.
             self.gur_model.addConstr(LHS == RHS, name='%s_%s' % ('SOC0', k))
-        #注意你的psh是哪一个？
-        for i in range(self.LAC_period-1):
-            if i == 0:
-                LHS = self.e_prev[i] + grb.quicksum(self.psh_gen_prev[i] / self.psh_system.parameter['GenEfficiency'] for j in self.psh_system.parameter['PSHName']) \
-                                              - grb.quicksum(self.psh_pump_prev[i] * self.psh_system.parameter['PumpEfficiency'] for j in self.psh_system.parameter['PSHName'])
-                RHS = self.e_system.parameter['EStart']
-                self.gur_model.addConstr(LHS == RHS, name='%s_%s' % ('SOC0', i))
-            else: 
-                LHS = self.e_prev[i] + grb.quicksum(self.psh_gen_prev[i] / self.psh_system.parameter['GenEfficiency'] for j in self.psh_system.parameter['PSHName']) \
-                                              - grb.quicksum(self.psh_pump_prev[i] * self.psh_system.parameter['PumpEfficiency'] for j in self.psh_system.parameter['PSHName'])
-                RHS = self.e_prev[i-1]
-                self.gur_model.addConstr(LHS == RHS, name='%s_%s' % ('SOC0', i))
-
-
 
 
     def add_constraint_epsh(self):
@@ -78,11 +74,11 @@ class OptModelSetUp():
             self.gur_model.addConstr(self.psh_pump[j] <= self.psh_system.parameter['PumpMax'], name='%s_%s' % ('psh_pump_max0', j))
             self.gur_model.addConstr(self.psh_pump[j] >= self.psh_system.parameter['PumpMin'], name='%s_%s' % ('psh_pump_min0', j))
 
-        for i in range(self.LAC_period):
-            self.gur_model.addConstr(self.psh_gen_prev[i] <= self.psh_system.parameter['GenMax'], name='%s_%s' % ('psh_gen_max'+str(i)))
-            self.gur_model.addConstr(self.psh_gen_prev[i] >= self.psh_system.parameter['GenMin'], name='%s_%s' % ('psh_gen_min'+str(i)))
-            self.gur_model.addConstr(self.psh_pump_prev[i] <= self.psh_system.parameter['PumpMax'], name='%s_%s' % ('psh_pump_max'+str(i)))
-            self.gur_model.addConstr(self.psh_pump_prev[i] >= self.psh_system.parameter['PumpMin'], name='%s_%s' % ('psh_pump_min'+str(i)))
+            for i in range(self.LAC_period):
+                self.gur_model.addConstr(self.psh_gen_prev[i][j] <= self.psh_system.parameter['GenMax'], name='%s_%s' % ('psh_gen_max'+str(i),j))
+                self.gur_model.addConstr(self.psh_gen_prev[i][j] >= self.psh_system.parameter['GenMin'], name='%s_%s' % ('psh_gen_min'+str(i),j))
+                self.gur_model.addConstr(self.psh_pump_prev[i][j] <= self.psh_system.parameter['PumpMax'], name='%s_%s' % ('psh_pump_max'+str(i),j))
+                self.gur_model.addConstr(self.psh_pump_prev[i][j] >= self.psh_system.parameter['PumpMin'], name='%s_%s' % ('psh_pump_min'+str(i),j))
 
 
         for k in self.e_system.parameter['EName']:
@@ -91,8 +87,8 @@ class OptModelSetUp():
 
         for i in range(self.LAC_period):
             for k in self.e_system.parameter['EName']:  # all are lists
-                self.gur_model.addConstr(self.e_prev[k] <= self.e_system.parameter['EMax'], name='%s_%s' % ('e_max'+str(i), k))
-                self.gur_model.addConstr(self.e_prev[k] >= self.e_system.parameter['EMin'], name='%s_%s' % ('e_min0'+str(i), k))
+                self.gur_model.addConstr(self.e_prev[i][k] <= self.e_system.parameter['EMax'], name='%s_%s' % ('e_max'+str(i), k))
+                self.gur_model.addConstr(self.e_prev[i][k] >= self.e_system.parameter['EMin'], name='%s_%s' % ('e_min0'+str(i), k))
 
 
     def add_constraint_curve(self):
@@ -153,7 +149,7 @@ class OptModelSetUp():
 ##the following is for set upt elements of optimization problems
     def set_up_variable(self):
     #add gen/pump
-        self.LAC_period = 22
+        self.LAC_period = 23
 
         self.psh_gen_prev = []
         self.psh_pump_prev  = []
@@ -222,14 +218,15 @@ class OptModelSetUp():
         self.profit_max = []
         for j in self.psh_system.parameter['PSHName']:
             self.profit_max.append((self.psh_gen[j] - self.psh_pump[j]) * self.lmp.lmp_scenarios[0][0])
+            for i in range(self.LAC_period):
+                self.profit_max.append((self.psh_gen_prev[i][j] - self.psh_pump_prev[i][j]) * self.lmp.lmp_scenarios_prev[i][0])
         for k in self.e_system.parameter['EName']:
             for i in range(self.curve.numbers):
                 bench_num = i
                 self.profit_max.append(self.curve.point_Y[bench_num + 1] * self.soc[bench_num][k])
         print(self.profit_max)
         #加上前半部分
-        for i in range(self.LAC_period):
-            self.profit_max.append((self.psh_gen_prev[i] - self.psh_pump_prev[i]) * self.lmp.lmp_scenarios_prev[i][0])
+
 
         self.obj = quicksum(self.profit_max)
 

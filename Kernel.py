@@ -29,18 +29,8 @@ class RL_Kernel():
     def main_function(self):
         #time_1 = time.time()
         self.Curr_Scenario_Cost_Total = []
-        if self.date =='March 07 2019':
-            self.start = 1+1
-            self.end = 600+1
-        if self.date =='April 01 2019':
-            self.start = 600+1
-            self.end = 1200+1
-        if self.date =='April 15 2019':
-            self.start = 1200+1
-            self.end = 1800+1
-        if self.date =='April 22 2019':
-            self.start = 1800+1
-            self.end = 2400+1
+        self.start = 1
+        self.end = 2
         for curr_scenario in range(self.start, self.end):
             self.Curr_Scenario_Price_Total = []
             self.PSH_Results = []
@@ -178,7 +168,6 @@ class RL_Kernel():
         self.optimal_soc_sum = self.curr_model.optimal_soc_sum
         self.optimal_psh_gen_sum = self.curr_model.optimal_psh_gen_sum
         self.optimal_psh_pump_sum = self.curr_model.optimal_psh_pump_sum
-
         print(self.curr_model.optimal_soc_sum)
 
 
@@ -281,7 +270,7 @@ class RL_Kernel():
             self.check_soc_curve.append(check)
 
         #抽取需要做multipross的部分在这里计算
-        time_1 = time.time()
+
         initial_soc_list = []
         for i in range(len(self.check_soc_curve)):
             if self.check_soc_curve[i] == 1:
@@ -307,9 +296,6 @@ class RL_Kernel():
             if self.check_soc_curve[i] == 1:
                 self.second_curve_profit[i] = MultiRL.optimal_profit_list[k]
                 k += 1
-        time_2 = time.time()
-        print('the time is', time_2 - time_1)
-
 
 
 
@@ -448,7 +434,7 @@ class RL_Kernel():
     #output the curve
         scenario = self.curr_scenario
         filename = self.e_system.e_start_folder + '/Curve_' + 'time_' + str(self.curr_model_para.LAC_bhour) + '_scenario_' +  str(scenario) + '.csv'
-        df = pd.DataFrame(self.curve.segments, columns =['soc_segment','slope'])
+        df = pd.DataFrame(self.curve.segments, columns = ['soc_segment','slope'])
         df.to_csv(filename, index=False, header=True)
 
 

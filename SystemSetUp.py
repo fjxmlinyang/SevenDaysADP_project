@@ -206,9 +206,12 @@ class LMP(System):
             self.Nlmp_s = 1
             temp_lmp_quantile_prev.append(1.0 / self.Nlmp_s)
             read_curr = (self.curr_model.scenario - 1)
-            temp_lmp_scenarios_prev.append(list(df[Column_name[read_curr]]))
+            temp_lmp_scenarios_prev=list(df[Column_name[read_curr]])
             self.lmp_quantiles_prev.append(temp_lmp_quantile_prev)
             self.lmp_scenarios_prev.append(temp_lmp_scenarios_prev)
+            print(list(df[Column_name[read_curr]]))
+            print(self.lmp_scenarios_prev)
+
 
 
 
