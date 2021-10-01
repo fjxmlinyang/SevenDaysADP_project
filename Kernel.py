@@ -7,7 +7,7 @@ from ModelSetUp import *
 from CurrModelPara import *
 from Curve import *
 #from Main_cal_opt import find_optimal_value
-from multiprocess import *
+from Multi import *
 
 
 class RL_Kernel():
@@ -191,6 +191,7 @@ class RL_Kernel():
                                             self.curr_scenario, self.current_stage, self.time_period)
             self.prev_lmp = LMP(self.prev_model)
             self.prev_lmp.set_up_parameter()
+            self.prev_lmp.set_up_parameter_previous()
             # curve, time = t+1, scenario= n-1
             self.pre_curve = Curve(100, 0, 3000, self.time_period)
             self.pre_curve.input_curve(self.curr_time + 1, self.curr_scenario - 1)
@@ -200,6 +201,7 @@ class RL_Kernel():
                                             self.curr_scenario, self.current_stage, self.time_period)
             self.prev_lmp = LMP(self.prev_model)
             self.prev_lmp.set_up_parameter()
+            self.prev_lmp.set_up_parameter_previous()
 
             self.pre_curve = Curve(100, 0, 3000, self.time_period)
             self.pre_curve.input_curve(self.curr_time, self.curr_scenario - 1)
