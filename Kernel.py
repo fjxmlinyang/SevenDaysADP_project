@@ -7,7 +7,7 @@ from ModelSetUp import *
 from CurrModelPara import *
 from Curve import *
 #from Main_cal_opt import find_optimal_value
-from multiprocess import *
+from Multi import *
 
 
 class RL_Kernel():
