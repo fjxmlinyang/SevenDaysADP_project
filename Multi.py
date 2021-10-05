@@ -318,7 +318,7 @@ class MulOptModelSetUp():
     def add_var_psh(self, var_name):
         return self.gur_model.addVars(self.psh_system.parameter['PSHName'], ub=float('inf'),lb=-float('inf'),vtype="C",name=var_name)
 
-    def add_constraint_rolling(self):
+    def add_constraint_week_rolling(self):
         ## SOC0: e_0=E_start; loop from 0 to 22; e_1=e_0+psh1;....e_23=e_22+psh_23; when loop to 22; directly add e_23=E_end
         for k in self.e_system.parameter['EName']:
             print('Estart:', float(self.e_system.parameter['EStart']))
@@ -330,7 +330,7 @@ class MulOptModelSetUp():
             self.gur_model.addConstr(LHS == RHS, name='%s_%s' % ('SOC0', k))
 
 
-    def add_constraint_epsh(self):
+    def add_constraint_week_epsh(self):
         for j in self.psh_system.parameter['PSHName']:  # all are lists
             self.gur_model.addConstr(self.psh_gen[j] <= self.psh_system.parameter['GenMax'], name='%s_%s' % ('psh_gen_max0', j))
             self.gur_model.addConstr(self.psh_gen[j] >= self.psh_system.parameter['GenMin'], name='%s_%s' % ('psh_gen_min0', j))
@@ -410,9 +410,9 @@ class MulOptModelSetUp():
 
     def set_up_constraint(self):
     # rolling constraint E_start = E_end +pump + gen
-        self.add_constraint_rolling()
+        self.add_constraint_week_rolling()
     # upper and lower constraint
-        self.add_constraint_epsh()
+        self.add_constraint_week_epsh()
     # curve constraint
         self.add_constraint_curve()
     # constraint for  d_1I_2 <= soc_1 <=d_1I_1?##
@@ -424,7 +424,7 @@ class MulOptModelSetUp():
 
         self.gur_model.update()
 
-    def set_up_variable(self):
+    def set_up_week_variable(self):
     #add gen/pump
         self.LAC_period = 23
 
@@ -464,7 +464,7 @@ class MulOptModelSetUp():
 
         self.gur_model.update()
 
-    def set_up_object(self):
+    def set_up_week_object(self):
         self.profit_max = []
         for j in self.psh_system.parameter['PSHName']:
             self.profit_max.append((self.psh_gen[j] - self.psh_pump[j]) * self.lmp.lmp_scenarios[0][0])
@@ -569,9 +569,9 @@ class MulRLSetUp(MulOptModelSetUp):
 # #psh_system, e_system, lmp, curve, curr_model_para, gur_model
 
     def set_up_main(self):
-        self.set_up_variable()
+        self.set_up_week_variable()
         self.set_up_constraint()
-        self.set_up_object()
+        self.set_up_week_object()
 
 
     def solve_model_main(self):
