@@ -337,9 +337,21 @@ class MulOptModelSetUp():
             self.gur_model.addConstr(self.psh_pump[j] <= self.psh_system.parameter['PumpMax'], name='%s_%s' % ('psh_pump_max0', j))
             self.gur_model.addConstr(self.psh_pump[j] >= self.psh_system.parameter['PumpMin'], name='%s_%s' % ('psh_pump_min0', j))
 
+            for i in range(self.LAC_period):
+                self.gur_model.addConstr(self.psh_gen_prev[i][j] <= self.psh_system.parameter['GenMax'], name='%s_%s' % ('psh_gen_max'+str(i),j))
+                self.gur_model.addConstr(self.psh_gen_prev[i][j] >= self.psh_system.parameter['GenMin'], name='%s_%s' % ('psh_gen_min'+str(i),j))
+                self.gur_model.addConstr(self.psh_pump_prev[i][j] <= self.psh_system.parameter['PumpMax'], name='%s_%s' % ('psh_pump_max'+str(i),j))
+                self.gur_model.addConstr(self.psh_pump_prev[i][j] >= self.psh_system.parameter['PumpMin'], name='%s_%s' % ('psh_pump_min'+str(i),j))
+
+
         for k in self.e_system.parameter['EName']:
             self.gur_model.addConstr(self.e[k] <= self.e_system.parameter['EMax'], name='%s_%s' % ('e_max0', k))
             self.gur_model.addConstr(self.e[k] >= self.e_system.parameter['EMin'], name='%s_%s' % ('e_min0', k))
+
+            for i in range(self.LAC_period):
+                self.gur_model.addConstr(self.e_prev[i][k] <= self.e_system.parameter['EMax'], name='%s_%s' % ('e_max'+str(i), k))
+                self.gur_model.addConstr(self.e_prev[i][k] >= self.e_system.parameter['EMin'], name='%s_%s' % ('e_min'+str(i), k))
+
 
     def add_constraint_curve(self):
         for k in self.e_system.parameter['EName']:
@@ -414,11 +426,24 @@ class MulOptModelSetUp():
 
     def set_up_variable(self):
     #add gen/pump
+        self.LAC_period = 23
+
+        self.psh_gen_prev = []
+        self.psh_pump_prev  = []
+
+        self.e_prev = []
+        for i in range(self.LAC_period):
+            name_num = str(i + 1)
+            self.psh_gen_prev.append((self.add_var_psh('psh_gen_' + name_num)))
+            self.psh_pump_prev.append((self.add_var_psh('psh_pump_' + name_num)))
+            self.e_prev.append((self.add_var_e('e_' + name_num)))
+
         self.psh_gen = self.add_var_psh('psh_gen_main')
         self.psh_pump = self.add_var_psh('psh_pump_main')
+        self.e = self.add_var_e('e_main')
 
     # add e
-        self.e = self.add_var_e('e_main')
+
 
     #add soc and I
         #self.len_var = self.curve.numbers #len(self.curve.point_X)-1
@@ -439,20 +464,21 @@ class MulOptModelSetUp():
 
         self.gur_model.update()
 
-
     def set_up_object(self):
         self.profit_max = []
         for j in self.psh_system.parameter['PSHName']:
             self.profit_max.append((self.psh_gen[j] - self.psh_pump[j]) * self.lmp.lmp_scenarios[0][0])
+            for i in range(self.LAC_period):
+                self.profit_max.append((self.psh_gen_prev[i][j] - self.psh_pump_prev[i][j]) * self.lmp.lmp_scenarios_prev[i][0])
+
         for k in self.e_system.parameter['EName']:
             for i in range(self.curve.numbers):
                 bench_num = i
-                #self.profit_max.append(self.curve.point_Y[bench_num] * self.soc[bench_num][k])
-                #curve如果是[soc=0, slope=10],[soc=30,slope=20], 从0-30,slope为30
-                self.profit_max.append(self.curve.point_Y[bench_num + 1] * self.soc[bench_num ][k])
+                self.profit_max.append(self.curve.point_Y[bench_num + 1] * self.soc[bench_num][k])
         print(self.profit_max)
-        self.obj = quicksum(self.profit_max)
 
+
+        self.obj = quicksum(self.profit_max)
 
 
 
@@ -591,6 +617,7 @@ class MulRLSetUp(MulOptModelSetUp):
                                                  self.curr_scenario, self.current_stage, self.time_period)
             self.lmp = LMP(self.curr_model_para)
             self.lmp.set_up_parameter()
+            self.lmp.set_up_parameter_previous()
             # curve, time = t+1, scenario= n-1
             self.curve = Curve(100, 0, 3000, self.time_period)
             # self.curve.input_curve(self.curr_time + 1, self.curr_scenario - 1)
@@ -601,6 +628,8 @@ class MulRLSetUp(MulOptModelSetUp):
                                                  self.curr_scenario, self.current_stage, self.time_period)
             self.lmp = LMP(self.curr_model_para)
             self.lmp.set_up_parameter()
+            self.lmp.set_up_parameter_previous()
+
 
             self.curve = Curve(100, 0, 3000, self.time_period)
             self.curve.input_curve(self.curr_time, self.curr_scenario - 1)
