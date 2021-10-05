@@ -85,8 +85,7 @@ class OptModelSetUp():
             self.gur_model.addConstr(self.e[k] <= self.e_system.parameter['EMax'], name='%s_%s' % ('e_max0', k))
             self.gur_model.addConstr(self.e[k] >= self.e_system.parameter['EMin'], name='%s_%s' % ('e_min0', k))
 
-        for i in range(self.LAC_period):
-            for k in self.e_system.parameter['EName']:  # all are lists
+            for i in range(self.LAC_period):
                 self.gur_model.addConstr(self.e_prev[i][k] <= self.e_system.parameter['EMax'], name='%s_%s' % ('e_max'+str(i), k))
                 self.gur_model.addConstr(self.e_prev[i][k] >= self.e_system.parameter['EMin'], name='%s_%s' % ('e_min0'+str(i), k))
 
@@ -220,6 +219,7 @@ class OptModelSetUp():
             self.profit_max.append((self.psh_gen[j] - self.psh_pump[j]) * self.lmp.lmp_scenarios[0][0])
             for i in range(self.LAC_period):
                 self.profit_max.append((self.psh_gen_prev[i][j] - self.psh_pump_prev[i][j]) * self.lmp.lmp_scenarios_prev[i][0])
+
         for k in self.e_system.parameter['EName']:
             for i in range(self.curve.numbers):
                 bench_num = i
