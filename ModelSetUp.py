@@ -42,7 +42,7 @@ class OptModelSetUp():
 
 
 
-    def add_constraint_rolling(self):
+    def add_constraint_week_rolling(self):
         print(type(self.e_prev[0]))
         print(type(self.e_system.parameter['EStart']))
         print(type(self.e['Reservoir1']))
@@ -67,7 +67,7 @@ class OptModelSetUp():
             self.gur_model.addConstr(LHS == RHS, name='%s_%s' % ('SOC0', k))
 
 
-    def add_constraint_epsh(self):
+    def add_constraint_week_epsh(self):
         for j in self.psh_system.parameter['PSHName']:  # all are lists
             self.gur_model.addConstr(self.psh_gen[j] <= self.psh_system.parameter['GenMax'], name='%s_%s' % ('psh_gen_max0', j))
             self.gur_model.addConstr(self.psh_gen[j] >= self.psh_system.parameter['GenMin'], name='%s_%s' % ('psh_gen_min0', j))
@@ -146,7 +146,7 @@ class OptModelSetUp():
             self.gur_model.addConstr(LHS_2 >= RHS_2, name='%s_%s' % ('final_lower', k))
 
 ##the following is for set upt elements of optimization problems
-    def set_up_variable(self):
+    def set_up_week_variable(self):
     #add gen/pump
         self.LAC_period = 23
 
@@ -188,9 +188,9 @@ class OptModelSetUp():
 
     def set_up_constraint(self):
     # rolling constraint E_start = E_end +pump + gen
-        self.add_constraint_rolling()
+        self.add_constraint_week_rolling()
     # upper and lower constraint
-        self.add_constraint_epsh()
+        self.add_constraint_week_epsh()
     # curve constraint
         self.add_constraint_curve()
     # constraint for  d_1I_2 <= soc_1 <=d_1I_1?##
@@ -202,7 +202,7 @@ class OptModelSetUp():
 
         self.gur_model.update()
 
-    def set_up_object(self):
+    def set_up_week_object(self):
         # self.profit_max = []
         # for j in self.psh_system.parameter['PSHName']:
         #     self.profit_max.append((self.psh_gen[j] - self.psh_pump[j]) * self.lmp.lmp_scenarios[0][0])
@@ -334,9 +334,9 @@ class RLSetUp(OptModelSetUp):
         # self.pre_lmp = pre_lmp
 
     def set_up_main(self):
-        self.set_up_variable()
+        self.set_up_week_variable()
         self.set_up_constraint()
-        self.set_up_object()
+        self.set_up_week_object()
 
     def solve_model_main(self):
         self.gur_model.setObjective(self.obj, GRB.MAXIMIZE)
