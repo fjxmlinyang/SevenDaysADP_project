@@ -24,7 +24,7 @@ class RL_Kernel():
         self.curr_scenario = None
         self.current_stage ='training_50' #'training_500'
         #如果我们要用repetitive DA， 我们需要LAC_last_windows = 0， probabilitsit = 1, DA = 0?
-        self.time_period = 23 #24? #24-1?
+        self.time_period = 7 # now is seven day #24? #24-1?
 
     def main_function(self):
         #time_1 = time.time()
