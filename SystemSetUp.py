@@ -202,32 +202,23 @@ class LMP(System):
         self.filename = './Scenarios_Prediction/day' + str(self.curr_model.time_period) + '.csv'
         Data = pd.read_csv(self.filename)
         df = pd.DataFrame(Data)
-        Column_name = list(Data.columns)
-        # for i in range(23):
-        #     temp_lmp_quantile_prev = []
-        #     self.Nlmp_s = 1
-        #     temp_lmp_quantile_prev.append(1.0 / self.Nlmp_s)
-        #     self.lmp_quantiles_prev.append(temp_lmp_quantile_prev)
-        #
-        #     #temp_lmp_scenarios_prev = []
-        #
-        #     read_curr = (self.curr_model.scenario - 1)
-        #     temp_lmp_scenarios_prev=list(df[Column_name[read_curr]])
-        #     self.lmp_scenarios_prev.append(temp_lmp_scenarios_prev)
-        #     print(self.lmp_scenarios_prev)
 
 
-        temp_lmp_quantile_prev = []
-        self.Nlmp_s = 1
-        temp_lmp_quantile_prev.append(1.0 / self.Nlmp_s)
-        self.lmp_quantiles_prev.append(temp_lmp_quantile_prev)
 
             # temp_lmp_scenarios_prev = []
 
-        read_curr = (self.curr_model.scenario - 1)
-        temp_lmp_scenarios_prev = list(df[Column_name[read_curr]])
-        self.lmp_scenarios_prev.append(temp_lmp_scenarios_prev)
-        print(self.lmp_scenarios_prev)
+        read_curr = self.curr_model.scenario - 1
+        temp = list(df.iloc[read_curr,:])
+        #temp_lmp_scenarios_prev = list(df[Column_name[read_curr]])
+        #self.lmp_scenarios_prev.append(temp_lmp_scenarios_prev)
+        self.lmp_scenarios_prev = temp
+
+        read_curr = self.curr_model.scenario - 1
+        temp = list(df.iloc[read_curr, -1])
+        self.lmp_scenarios =  temp
+
+
+
 
 
 # test_1=CurrModelPara(1, 1, 1, 'April', 1, 5, 'sample', 23)        # LAC_last_windows,  probabilistic, RT_DA, date, LAC_bhour, scenario

@@ -469,7 +469,7 @@ class MulOptModelSetUp():
         for j in self.psh_system.parameter['PSHName']:
             self.profit_max.append((self.psh_gen[j] - self.psh_pump[j]) * self.lmp.lmp_scenarios[0][0])
             for i in range(self.LAC_period):
-                self.profit_max.append((self.psh_gen_prev[i][j] - self.psh_pump_prev[i][j]) * self.lmp.lmp_scenarios_prev[i][0])
+                self.profit_max.append((self.psh_gen_prev[i][j] - self.psh_pump_prev[i][j]) * self.lmp.lmp_scenarios_prev[i])
 
         for k in self.e_system.parameter['EName']:
             for i in range(self.curve.numbers):
