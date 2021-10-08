@@ -467,7 +467,7 @@ class MulOptModelSetUp():
     def set_up_week_object(self):
         self.profit_max = []
         for j in self.psh_system.parameter['PSHName']:
-            self.profit_max.append((self.psh_gen[j] - self.psh_pump[j]) * self.lmp.lmp_scenarios[0][0])
+            self.profit_max.append((self.psh_gen[j] - self.psh_pump[j]) * self.lmp.lmp_scenarios)
             for i in range(self.LAC_period):
                 self.profit_max.append((self.psh_gen_prev[i][j] - self.psh_pump_prev[i][j]) * self.lmp.lmp_scenarios_prev[i])
 
@@ -522,10 +522,8 @@ class MulOptModelSetUp():
     def get_curr_cost(self):
         #put the soc_sum in, we get the profit
         point_profit = []
-        for s in range(self.lmp.Nlmp_s):
-            p_s = self.lmp.lmp_quantiles[s]
-            for j in self.psh_system.parameter['PSHName']:
-                point_profit.append((self.optimal_psh_gen_sum - self.optimal_psh_pump_sum) * self.lmp.lmp_scenarios[s][0] * p_s)
+
+        point_profit.append((self.optimal_psh_gen_sum - self.optimal_psh_pump_sum) * self.lmp.lmp_scenarios)
         # for j in self.psh_system.parameter['PSHName']:
         #     point_profit.append((self.psh_gen[j] - self.psh_pump[j]) * self.lmp.lmp_scenarios[0][0])
 
@@ -616,8 +614,7 @@ class MulRLSetUp(MulOptModelSetUp):
                                                  self.curr_time + 1,
                                                  self.curr_scenario, self.current_stage, self.time_period)
             self.lmp = LMP(self.curr_model_para)
-            self.lmp.set_up_parameter()
-            self.lmp.set_up_parameter_previous()
+            self.lmp.seven_set_up_parameter()
             # curve, time = t+1, scenario= n-1
             self.curve = Curve(100, 0, 3000, self.time_period)
             # self.curve.input_curve(self.curr_time + 1, self.curr_scenario - 1)
@@ -627,8 +624,8 @@ class MulRLSetUp(MulOptModelSetUp):
                                                  self.curr_time,
                                                  self.curr_scenario, self.current_stage, self.time_period)
             self.lmp = LMP(self.curr_model_para)
-            self.lmp.set_up_parameter()
-            self.lmp.set_up_parameter_previous()
+            #self.lmp.set_up_parameter()
+            self.lmp.seven_set_up_parameter()
 
 
             self.curve = Curve(100, 0, 3000, self.time_period)

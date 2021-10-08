@@ -58,10 +58,6 @@ class Prediction():
         print('################################## lmp_system set up ##################################')
         self.lmp = LMP(self.curr_model_para)
         self.lmp.predict_set_up_parameter()
-        #print(self.lmp.date)
-        #print('lmp_quantiles=', self.lmp.lmp_quantiles)
-        #print('lmp_scenarios=', self.lmp.lmp_scenarios)
-        #print('lmp_Nlmp_s=', self.lmp.Nlmp_s)
 
         print('################################## curve set up ##################################')
         self.old_curve = Curve(100, 0, 3000, self.time_period)

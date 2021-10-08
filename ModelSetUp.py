@@ -121,14 +121,13 @@ class OptModelSetUp():
                                     name='%s_%s' % ('soc_' + name_num + '_min', k))
 
     def add_constraint_I(self):
-        for s in range(self.lmp.Nlmp_s):
-            for k in self.e_system.parameter['EName']:
-                for i in range(self.curve.numbers - 1):
-                    name_num = str(i + 1)
-                    name_num_next = str(i + 2)
-                    bench_num = i
-                    self.gur_model.addConstr(self.I[bench_num + 1][k] <= self.I[bench_num][k],
-                                    name='%s_%s' % ('I_' + name_num_next + '_' + name_num, k))
+        for k in self.e_system.parameter['EName']:
+            for i in range(self.curve.numbers - 1):
+                name_num = str(i + 1)
+                name_num_next = str(i + 2)
+                bench_num = i
+                self.gur_model.addConstr(self.I[bench_num + 1][k] <= self.I[bench_num][k],
+                                name='%s_%s' % ('I_' + name_num_next + '_' + name_num, k))
 
     def add_contraint_terminal(self):
         beta = 0.001  # 0.001
@@ -147,7 +146,8 @@ class OptModelSetUp():
 
 ##the following is for set upt elements of optimization problems
     def set_up_week_variable(self):
-    #add gen/pump
+
+    # add gen_prev, pump_prev, e_prev
         self.LAC_period = 23
 
         self.psh_gen_prev = []
@@ -156,15 +156,16 @@ class OptModelSetUp():
         self.e_prev = []
         for i in range(self.LAC_period):
             name_num = str(i + 1)
-            self.psh_gen_prev.append((self.add_var_psh('psh_gen_' + name_num)))
-            self.psh_pump_prev.append((self.add_var_psh('psh_pump_' + name_num)))
-            self.e_prev.append((self.add_var_e('e_' + name_num)))
+            self.psh_gen_prev.append((self.add_var_psh('first_23_psh_gen_' + name_num)))
+            self.psh_pump_prev.append((self.add_var_psh('first_23_psh_pump_' + name_num)))
+            self.e_prev.append((self.add_var_e('first_23_e_' + name_num)))
 
+    # add gen/pump
         self.psh_gen = self.add_var_psh('psh_gen_main')
         self.psh_pump = self.add_var_psh('psh_pump_main')
-        self.e = self.add_var_e('e_main')
 
-    # add e
+    #add e
+        self.e = self.add_var_e('e_main')
 
 
     #add soc and I
@@ -187,6 +188,7 @@ class OptModelSetUp():
         self.gur_model.update()
 
     def set_up_constraint(self):
+
     # rolling constraint E_start = E_end +pump + gen
         self.add_constraint_week_rolling()
     # upper and lower constraint
@@ -198,25 +200,15 @@ class OptModelSetUp():
     # constraint for I_1<=I_2<=I_3
         self.add_constraint_I()
     # terminal constraint
-        self.add_contraint_terminal()
+        if self.curr_model_para.time_period == 7:
+            self.add_contraint_terminal()
 
         self.gur_model.update()
 
     def set_up_week_object(self):
-        # self.profit_max = []
-        # for j in self.psh_system.parameter['PSHName']:
-        #     self.profit_max.append((self.psh_gen[j] - self.psh_pump[j]) * self.lmp.lmp_scenarios[0][0])
-        # for k in self.e_system.parameter['EName']:
-        #     for i in range(self.curve.numbers):
-        #         bench_num = i
-        #         #self.profit_max.append(self.curve.point_Y[bench_num] * self.soc[bench_num][k])
-        #         #curve如果是[soc=0, slope=10],[soc=30,slope=20], 从0-30,slope为30
-        #         self.profit_max.append(self.curve.point_Y[bench_num + 1] * self.soc[bench_num ][k])
-        # print(self.profit_max)
-        # self.obj = quicksum(self.profit_max)
         self.profit_max = []
         for j in self.psh_system.parameter['PSHName']:
-            self.profit_max.append((self.psh_gen[j] - self.psh_pump[j]) * self.lmp.lmp_scenarios[0][0])
+            self.profit_max.append((self.psh_gen[j] - self.psh_pump[j]) * self.lmp.lmp_scenarios)
             for i in range(self.LAC_period):
                 self.profit_max.append((self.psh_gen_prev[i][j] - self.psh_pump_prev[i][j]) * self.lmp.lmp_scenarios_prev[i])
 
@@ -240,8 +232,9 @@ class OptModelSetUp():
             soc = v.X
             self.optimal_soc.append(soc)
         self.optimal_soc_sum = sum(self.optimal_soc)
-        a = self.optimal_soc_sum
-        print(a)
+        print(self.optimal_soc_sum)
+
+
 
 
     def get_optimal_gen_pump(self):
@@ -255,8 +248,21 @@ class OptModelSetUp():
         for v in [v for v in self.gur_model.getVars() if 'psh_pump_main' in v.Varname]:
             psh = v.X
             #psh0.append(-psh)
+            #because of list, we sum them
             self.optimal_psh_pump.append(psh)
         self.optimal_psh_pump_sum = sum(self.optimal_psh_pump)
+        print(self.optimal_psh_pump_sum)
+
+        self.optimal_seven_psh_pump = []
+        self.optimal_seven_psh_gen = []
+        for v in [v for v in self.gur_model.getVars() if 'first_23_psh_gen' in v.Varname]:
+            psh = v.X
+            self.optimal_seven_psh_gen.append(psh)
+        for v in [v for v in self.gur_model.getVars() if 'first_23_psh_pump' in v.Varname]:
+            psh = v.X
+            # psh0.append(-psh)
+            # because of list, we sum them
+            self.optimal_seven_psh_pump.append(psh)
         print(self.optimal_psh_pump_sum)
 ######################################################
 #####################################################
@@ -277,12 +283,8 @@ class OptModelSetUp():
         point_profit = []
         point_price = 0
         for s in range(self.lmp.Nlmp_s):
-            p_s = self.lmp.lmp_quantiles[s]
-            for j in self.psh_system.parameter['PSHName']:
-                point_profit.append((self.optimal_psh_gen_sum - self.optimal_psh_pump_sum) * self.lmp.lmp_scenarios[s][0] * p_s)
-                point_price = self.lmp.lmp_scenarios[s][0]
-        # for j in self.psh_system.parameter['PSHName']:
-        #     point_profit.append((self.psh_gen[j] - self.psh_pump[j]) * self.lmp.lmp_scenarios[0][0])
+            point_profit.append((self.optimal_psh_gen_sum - self.optimal_psh_pump_sum) * self.lmp.lmp_scenarios)
+            point_price = self.lmp.lmp_scenarios
         self.curr_price = point_price
         self.curr_cost = sum(point_profit)
 
@@ -301,7 +303,11 @@ class OptModelSetUp():
                 st = time + ',' + '%s,%.1f' % (name, self.optimal_e) + '\n'
                 wf.write(st)
 
-
+        self.optimal_seven_e = []
+        for v in [v for v in self.gur_model.getVars() if 'first_23_e' in v.Varname]:
+            psh = v.X
+            self.optimal_seven_e.append(psh)
+        print(self.optimal_seven_e)
     def x_to_soc(self, point_X):
         # change soc_sum to soc_1 + soc_2 + soc_3
         turn_1 = point_X // self.curve.steps

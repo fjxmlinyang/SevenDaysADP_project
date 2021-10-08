@@ -155,19 +155,6 @@ class LMP(System):
             #所以要用scneario,我们需要LAC_last_windows = 0, probabilistic = 1, DA = 0
             #如果我们要用repetitive DA， 我们需要LAC_last_windows = 0， probabilitsit = 1, DA = 0?
 
-
-        # Data = pd.read_csv(self.filename)
-        # df = pd.DataFrame(Data)
-        # Column_name = list(Data.columns)
-        # # DA_lmp=[]???
-        # self.Nlmp_s = 1
-        # temp_lmp_quantile_prev.append(1.0 / self.Nlmp_s)
-        # read_curr = (self.curr_model.scenario - 1)
-        # temp_lmp_scenarios_prev = list(df[Column_name[read_curr]])
-        # self.lmp_quantiles_prev.append(temp_lmp_quantile_prev)
-        # self.lmp_scenarios_prev.append(temp_lmp_scenarios_prev)
-        # print(self.lmp_scenarios_prev)
-
         self.Input_folder = None
         self.filename = None
         self.Output_folder = None
@@ -194,28 +181,22 @@ class LMP(System):
         self.filename = None
         self.Output_folder = None
 
-    def set_up_parameter_previous(self):
-        #self.lmp_quantiles_prev[i][j]是关于第i小时，第j个scenario得
+    def seven_set_up_parameter(self):
 
-        self.lmp_quantiles_prev = []
         self.lmp_scenarios_prev = []
         self.filename = './Scenarios_Prediction/day' + str(self.curr_model.time_period) + '.csv'
         Data = pd.read_csv(self.filename)
         df = pd.DataFrame(Data)
-
-
-
-            # temp_lmp_scenarios_prev = []
-
+        #read previous 23 hours lmp
         read_curr = self.curr_model.scenario - 1
-        temp = list(df.iloc[read_curr,:])
-        #temp_lmp_scenarios_prev = list(df[Column_name[read_curr]])
-        #self.lmp_scenarios_prev.append(temp_lmp_scenarios_prev)
+        temp = list(df.iloc[read_curr, :])
         self.lmp_scenarios_prev = temp
 
+        #read current last hour lmp
         read_curr = self.curr_model.scenario - 1
-        temp = list(df.iloc[read_curr, -1])
-        self.lmp_scenarios =  temp
+        temp = df.iloc[read_curr, -1]
+        self.Nlmp_s = 1
+        self.lmp_scenarios = temp
 
 
 

@@ -136,16 +136,16 @@ class RL_Kernel():
         print('################################## e_system set up ##################################')
         self.e_system = ESystem(self.curr_model_para)
         self.e_system.set_up_parameter()
+####
+        # if self.curr_model_para.time_period == 7:
+        #     self.e_system.parameter['EStart'] = initial_soc
+
         print(self.e_system.parameter)
 
         print('################################## lmp_system set up ##################################')
         self.lmp = LMP(self.curr_model_para)
-        self.lmp.set_up_parameter()
-        self.lmp.set_up_parameter_previous()
-        #print(self.lmp.date)
-        print('lmp_quantiles=', self.lmp.lmp_quantiles)
-        print('lmp_scenarios=', self.lmp.lmp_scenarios)
-        print('lmp_Nlmp_s=', self.lmp.Nlmp_s)
+        self.lmp.seven_set_up_parameter()
+
 
         print('################################## curve set up ##################################')
         self.old_curve = Curve(100, 0, 3000, self.time_period)
@@ -190,8 +190,8 @@ class RL_Kernel():
                                             self.curr_time + 1,
                                             self.curr_scenario, self.current_stage, self.time_period)
             self.prev_lmp = LMP(self.prev_model)
-            self.prev_lmp.set_up_parameter()
-            self.prev_lmp.set_up_parameter_previous()
+            #self.prev_lmp.set_up_parameter()
+            self.prev_lmp.seven_set_up_parameter()
             # curve, time = t+1, scenario= n-1
             self.pre_curve = Curve(100, 0, 3000, self.time_period)
             self.pre_curve.input_curve(self.curr_time + 1, self.curr_scenario - 1)
@@ -200,8 +200,8 @@ class RL_Kernel():
                                             self.curr_time,
                                             self.curr_scenario, self.current_stage, self.time_period)
             self.prev_lmp = LMP(self.prev_model)
-            self.prev_lmp.set_up_parameter()
-            self.prev_lmp.set_up_parameter_previous()
+            #self.prev_lmp.set_up_parameter()
+            self.prev_lmp.seven_set_up_parameter()
 
             self.pre_curve = Curve(100, 0, 3000, self.time_period)
             self.pre_curve.input_curve(self.curr_time, self.curr_scenario - 1)
@@ -364,13 +364,7 @@ class RL_Kernel():
 
         print(self.second_curve_slope)
 
-            # _cur = len(self.second_curve_slope) - i - 1
-            # if self.check_soc_curve[i] == 0:
-            #     if _cur != 0 and self.second_curve_slope[_cur] > self.second_curve_slope[_cur-1] and self.second_curve_slope[_cur] < self.old_curve.intial_slope_set:
-            #         self.second_curve_slope[_cur - 1] = self.second_curve_slope[_cur]
-            #     elif _cur != 0 and self.second_curve_slope[_cur] > self.second_curve_slope[_cur-1] and self.second_curve_slope[_cur] > self.old_curve.intial_slope_set:
-            #         self.second_curve_slope[_cur] = self.old_curve.intial_slope_set
-            #         self.second_curve_slope[_cur - 1] = self.old_curve.intial_slope_set
+
 
 
 
@@ -466,18 +460,12 @@ class RL_Kernel():
         #put the soc_sum in, we get the profit
         point_x_soc = self.x_to_soc(point_X)
         point_profit = []
-        for s in range(self.lmp.Nlmp_s):
-            p_s = self.lmp.lmp_quantiles[s]
-            for j in self.psh_system.parameter['PSHName']:
-                point_profit.append((self.optimal_psh_gen_sum - self.optimal_psh_pump_sum) * self.lmp.lmp_scenarios[s][0] * p_s)
-        # for j in self.psh_system.parameter['PSHName']:
-        #     point_profit.append((self.psh_gen[j] - self.psh_pump[j]) * self.lmp.lmp_scenarios[0][0])
 
-        #self.curr_cost = sum(point_profit)
-        for k in self.e_system.parameter['EName']:
-            for i in range(self.curve.numbers):
-                bench_num = i
-                point_profit.append(self.curve.point_Y[bench_num + 1] * point_x_soc[bench_num])
+        point_profit.append((self.optimal_psh_gen_sum - self.optimal_psh_pump_sum) * self.lmp.lmp_scenarios)
+
+        for i in range(self.curve.numbers):
+            bench_num = i
+            point_profit.append(self.curve.point_Y[bench_num + 1] * point_x_soc[bench_num])
         point_profit_sum = sum(point_profit)
         return point_profit_sum
 
@@ -506,7 +494,8 @@ class RL_Kernel():
 
 train = RL_Kernel()
 #test.calculate_old_curve()
-date_list =['March 07 2019', 'April 01 2019', 'April 15 2019', 'April 22 2019']
+#date_list =['March 07 2019', 'April 01 2019', 'April 15 2019', 'April 22 2019']
+date_list = ['Everyday']
 #alpha = [0, 0.2, 0.5, 0.8, 1]
 #date_list =['April 22 2019']
 alpha = [0.2]
