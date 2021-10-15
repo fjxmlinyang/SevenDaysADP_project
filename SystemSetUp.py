@@ -188,13 +188,12 @@ class LMP(System):
         Data = pd.read_csv(self.filename)
         df = pd.DataFrame(Data)
         #read previous 23 hours lmp
-        read_curr = self.curr_model.scenario - 1
-        temp = list(df.iloc[read_curr, :])
+        read_curr = (self.curr_model.scenario - 1) % 50
+        temp = list(df.iloc[0:23, read_curr])
         self.lmp_scenarios_prev = temp
 
         #read current last hour lmp
-        read_curr = self.curr_model.scenario - 1
-        temp = df.iloc[read_curr, -1]
+        temp = df.iloc[23,read_curr]
         self.Nlmp_s = 1
         self.lmp_scenarios = temp
 

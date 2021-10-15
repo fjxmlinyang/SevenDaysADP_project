@@ -83,8 +83,8 @@ class MulOptModelSetUp():
             self.gur_model.addConstr(self.e[k] >= self.e_system.parameter['EMin'], name='%s_%s' % ('e_min0', k))
 
             for i in range(self.one_day_period):
-                self.gur_model.addConstr(self.e_prev[i][k] <= self.e_system.parameter['EMax'], name='%s_%s' % ('e_max'+str(i), k))
-                self.gur_model.addConstr(self.e_prev[i][k] >= self.e_system.parameter['EMin'], name='%s_%s' % ('e_min'+str(i), k))
+                self.gur_model.addConstr(self.e_prev[i][k] <= self.e_system.parameter['EMax'], name='%s_%s' % ('e_max'+ str(i), k))
+                self.gur_model.addConstr(self.e_prev[i][k] >= self.e_system.parameter['EMin'], name='%s_%s' % ('e_min'+ str(i), k))
 
 
     def add_constraint_curve(self):

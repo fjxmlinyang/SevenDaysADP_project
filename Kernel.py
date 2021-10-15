@@ -24,13 +24,13 @@ class RL_Kernel():
         self.curr_scenario = None
         self.current_stage ='training_50' #'training_500'
         #如果我们要用repetitive DA， 我们需要LAC_last_windows = 0， probabilitsit = 1, DA = 0?
-        self.day_period = 7 # now is seven day #24? #24-1?
+        self.day_period = 6 # now is seven day #24? #24-1?  #dont forget to change the terminal constraint
 
     def main_function(self):
         #time_1 = time.time()
         self.Curr_Scenario_Cost_Total = []
         self.start = 1
-        self.end = 2
+        self.end = 200
         for curr_scenario in range(self.start, self.end):
             self.Curr_Scenario_Price_Total = []
             self.PSH_Results = []
@@ -279,10 +279,16 @@ class RL_Kernel():
         beta = 0.001
         #让无法到的点设置成为着-10000
         for value in self.second_curve_soc:
+            #self.day_period - self.curr_day
             distance = value - float(self.e_system.parameter['EEnd'])
-            left_cod = distance <= 0 and (abs(distance) < (self.day_period - self.curr_day) * float(
+            # left_cod = distance <= 0 and (abs(distance) < (self.day_period - self.curr_day) * float(
+            #     self.psh_system.parameter['PumpMax']) * (float(self.psh_system.parameter['PumpEfficiency']) - beta))
+            # right_cod = distance > 0 and (abs(distance) < (self.day_period - self.curr_day) * float(
+            #     self.psh_system.parameter['GenMax']) / (float(self.psh_system.parameter['GenEfficiency']) + beta))
+#self.day_period这个要注意！！！！！！还没改
+            left_cod = distance <= 0 and (abs(distance) < (self.day_period - self.day_period) * float(
                 self.psh_system.parameter['PumpMax']) * (float(self.psh_system.parameter['PumpEfficiency']) - beta))
-            right_cod = distance > 0 and (abs(distance) < (self.day_period - self.curr_day) * float(
+            right_cod = distance > 0 and (abs(distance) < (self.day_period - self.day_period) * float(
                 self.psh_system.parameter['GenMax']) / (float(self.psh_system.parameter['GenEfficiency']) + beta))
             if left_cod or right_cod:
                 # if left_value < 0 and right_value > 0:
