@@ -47,7 +47,7 @@ class OptModelSetUp():
         print(type(self.e_system.parameter['EStart']))
         print(type(self.e['Reservoir1']))
         for k in self.e_system.parameter['EName']:
-            for i in range(self.LAC_period-1):
+            for i in range(self.one_day_period-1):
                 if i == 0:
                     LHS = self.e_prev[i][k] + grb.quicksum(self.psh_gen_prev[i][j] / self.psh_system.parameter['GenEfficiency'] for j in self.psh_system.parameter['PSHName']) \
                                                   - grb.quicksum(self.psh_pump_prev[i][j] * self.psh_system.parameter['PumpEfficiency'] for j in self.psh_system.parameter['PSHName'])
@@ -62,7 +62,7 @@ class OptModelSetUp():
         for k in self.e_system.parameter['EName']:
             LHS = self.e[k] + grb.quicksum(self.psh_gen[j] / self.psh_system.parameter['GenEfficiency'] for j in self.psh_system.parameter['PSHName']) \
                                           - grb.quicksum(self.psh_pump[j] * self.psh_system.parameter['PumpEfficiency'] for j in self.psh_system.parameter['PSHName'])
-            RHS = self.e_prev[self.LAC_period-1][k]
+            RHS = self.e_prev[self.one_day_period-1][k]
             ###if we calculate the first one, we use 'SOC0', and the last we use 'End'; or we choose the SOC0 to "beginning", at the same time the last we use 'SOC'.
             self.gur_model.addConstr(LHS == RHS, name='%s_%s' % ('SOC0', k))
 
@@ -74,7 +74,7 @@ class OptModelSetUp():
             self.gur_model.addConstr(self.psh_pump[j] <= self.psh_system.parameter['PumpMax'], name='%s_%s' % ('psh_pump_max0', j))
             self.gur_model.addConstr(self.psh_pump[j] >= self.psh_system.parameter['PumpMin'], name='%s_%s' % ('psh_pump_min0', j))
 
-            for i in range(self.LAC_period):
+            for i in range(self.one_day_period):
                 self.gur_model.addConstr(self.psh_gen_prev[i][j] <= self.psh_system.parameter['GenMax'], name='%s_%s' % ('psh_gen_max'+str(i),j))
                 self.gur_model.addConstr(self.psh_gen_prev[i][j] >= self.psh_system.parameter['GenMin'], name='%s_%s' % ('psh_gen_min'+str(i),j))
                 self.gur_model.addConstr(self.psh_pump_prev[i][j] <= self.psh_system.parameter['PumpMax'], name='%s_%s' % ('psh_pump_max'+str(i),j))
@@ -85,9 +85,9 @@ class OptModelSetUp():
             self.gur_model.addConstr(self.e[k] <= self.e_system.parameter['EMax'], name='%s_%s' % ('e_max0', k))
             self.gur_model.addConstr(self.e[k] >= self.e_system.parameter['EMin'], name='%s_%s' % ('e_min0', k))
 
-            for i in range(self.LAC_period):
-                self.gur_model.addConstr(self.e_prev[i][k] <= self.e_system.parameter['EMax'], name='%s_%s' % ('e_max'+str(i), k))
-                self.gur_model.addConstr(self.e_prev[i][k] >= self.e_system.parameter['EMin'], name='%s_%s' % ('e_min0'+str(i), k))
+            for i in range(self.one_day_period):
+                self.gur_model.addConstr(self.e_prev[i][k] <= self.e_system.parameter['EMax'], name='%s_%s' % ('e_max'+ str(i), k))
+                self.gur_model.addConstr(self.e_prev[i][k] >= self.e_system.parameter['EMin'], name='%s_%s' % ('e_min0'+ str(i), k))
 
 
     def add_constraint_curve(self):
@@ -132,29 +132,36 @@ class OptModelSetUp():
     def add_contraint_terminal(self):
         beta = 0.001  # 0.001
         for k in self.e_system.parameter['EName']:
-            curr_time = self.curr_model_para.time_period - self.curr_model_para.LAC_bhour
+            curr_day = self.curr_model_para.day_period - self.curr_model_para.curr_day
             LHS_1 = self.e[k] - self.e_system.parameter['EEnd']
-            RHS_1 = (curr_time) * self.psh_system.parameter['GenMax'] / (
+            RHS_1 = (curr_day) * self.psh_system.parameter['GenMax'] / (
                         self.psh_system.parameter['GenEfficiency'] + beta)  # PSHmax_g[0] / PSHefficiency[0]
             self.gur_model.addConstr(LHS_1 <= RHS_1, name='%s_%s' % ('final_upper', k))
         for k in self.e_system.parameter['EName']:
-            curr_time = self.curr_model_para.time_period - self.curr_model_para.LAC_bhour
+            curr_day = self.curr_model_para.day_period - self.curr_model_para.curr_day
             LHS_2 = self.e[k] - self.e_system.parameter['EEnd']
-            RHS_2 = -(curr_time) * self.psh_system.parameter['PumpMax'] * (
+            RHS_2 = -(curr_day) * self.psh_system.parameter['PumpMax'] * (
                         self.psh_system.parameter['PumpEfficiency'] - beta)  # PSHmax_p[0] * PSHefficiency[0]
             self.gur_model.addConstr(LHS_2 >= RHS_2, name='%s_%s' % ('final_lower', k))
+
+    def add_week_contraint_terminal(self):
+        for k in self.e_system.parameter['EName']:
+            LHS = self.e[k] - self.e_system.parameter['EEnd']
+            RHS = 0
+            self.gur_model.addConstr(LHS == RHS, name='%s_%s' % ('final_up_down', k))
+
 
 ##the following is for set upt elements of optimization problems
     def set_up_week_variable(self):
 
     # add gen_prev, pump_prev, e_prev
-        self.LAC_period = 23
+        self.one_day_period = 23
 
         self.psh_gen_prev = []
         self.psh_pump_prev  = []
 
         self.e_prev = []
-        for i in range(self.LAC_period):
+        for i in range(self.one_day_period):
             name_num = str(i + 1)
             self.psh_gen_prev.append((self.add_var_psh('first_23_psh_gen_' + name_num)))
             self.psh_pump_prev.append((self.add_var_psh('first_23_psh_pump_' + name_num)))
@@ -200,8 +207,8 @@ class OptModelSetUp():
     # constraint for I_1<=I_2<=I_3
         self.add_constraint_I()
     # terminal constraint
-        if self.curr_model_para.time_period == 7:
-            self.add_contraint_terminal()
+        if self.curr_model_para.curr_day == 6:####6:
+            self.add_week_contraint_terminal()
 
         self.gur_model.update()
 
@@ -209,7 +216,7 @@ class OptModelSetUp():
         self.profit_max = []
         for j in self.psh_system.parameter['PSHName']:
             self.profit_max.append((self.psh_gen[j] - self.psh_pump[j]) * self.lmp.lmp_scenarios)
-            for i in range(self.LAC_period):
+            for i in range(self.one_day_period):
                 self.profit_max.append((self.psh_gen_prev[i][j] - self.psh_pump_prev[i][j]) * self.lmp.lmp_scenarios_prev[i])
 
         for k in self.e_system.parameter['EName']:
@@ -253,16 +260,16 @@ class OptModelSetUp():
         self.optimal_psh_pump_sum = sum(self.optimal_psh_pump)
         print(self.optimal_psh_pump_sum)
 
-        self.optimal_seven_psh_pump = []
-        self.optimal_seven_psh_gen = []
+        self.optimal_hour23_psh_pump = []
+        self.optimal_hour23_psh_gen = []
         for v in [v for v in self.gur_model.getVars() if 'first_23_psh_gen' in v.Varname]:
             psh = v.X
-            self.optimal_seven_psh_gen.append(psh)
+            self.optimal_hour23_psh_gen.append(psh)
         for v in [v for v in self.gur_model.getVars() if 'first_23_psh_pump' in v.Varname]:
             psh = v.X
             # psh0.append(-psh)
             # because of list, we sum them
-            self.optimal_seven_psh_pump.append(psh)
+            self.optimal_hour23_psh_pump.append(psh)
         print(self.optimal_psh_pump_sum)
 ######################################################
 #####################################################
@@ -291,14 +298,14 @@ class OptModelSetUp():
 
     def output_optimal(self):
     #output the e for next time
-        filename = self.e_system.e_start_folder + '/LAC_Solution_System_SOC_'+ str(self.curr_model_para.LAC_bhour) + '.csv'
+        filename = self.e_system.e_start_folder + '/LAC_Solution_System_SOC_'+ str(self.curr_model_para.curr_day) + '.csv'
 
         with open(filename, 'w') as wf:
             wf.write('Num_Period,Reservoir_Name,SOC\n')
             _temp = list(self.e_system.parameter['EName'])[0]
             for v in [v for v in self.gur_model.getVars() if (_temp in v.Varname and 'e_main' in v.Varname)]:
                 self.optimal_e = v.X
-                time = 'T' + str(self.curr_model_para.LAC_bhour)
+                time = 'T' + str(self.curr_model_para.curr_day)
                 name = _temp
                 st = time + ',' + '%s,%.1f' % (name, self.optimal_e) + '\n'
                 wf.write(st)

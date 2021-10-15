@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from csv import reader
 
 class Curve(object):
-    def __init__(self, numbers, lo_bd, up_bd, time_period):
+    def __init__(self, numbers, lo_bd, up_bd, day_period):
         self.numbers = numbers
         self.up_bd = up_bd
         self.lo_bd = lo_bd
@@ -13,7 +13,7 @@ class Curve(object):
         self.filename_all = './Output_Curve'
         self.seg_initial()
         self.curve_initial()
-        self.time_period = time_period
+        self.day_period = day_period
         #self.output_initial_curve()
 
     
@@ -76,8 +76,8 @@ class Curve(object):
 
     def output_initial_curve(self):
         # output the initial curve
-        for curr_time in range(self.time_period):
-            _str = str(curr_time)
+        for curr_day in range(self.day_period):
+            _str = str(curr_day)
             scenario = 0
             filename = self.filename_all + '/Curve_' + 'time_' + _str + '_scenario_' + str(scenario) + '.csv'
             df = pd.DataFrame(self.segments, columns=['soc_segment', 'slope'])
@@ -86,8 +86,8 @@ class Curve(object):
     def input_tuned_initial_curve(self, last_scenario):
         # only works when this project starts
         # read 名字
-        for curr_time in range(self.time_period):
-            _str = str(curr_time)
+        for curr_day in range(self.day_period):
+            _str = str(curr_day)
             filename = f'{self.filename_all}/Curve_time_{_str}_scenario_{str(last_scenario)}.csv'
             df = pd.read_csv(filename)
             # self.segments = df.values.tolist()
@@ -96,10 +96,10 @@ class Curve(object):
             filename = self.filename_all + '/Curve_' + 'time_' + _str + '_scenario_' + str(scenario) + '.csv'
             df.to_csv(filename, index=False, header=True)
 
-    def input_prediction_curve(self, last_scenario, curr_time):
+    def input_prediction_curve(self, last_scenario, curr_day):
         #only works when this project starts
         #read 名字
-        _str = str(curr_time)
+        _str = str(curr_day)
         filename = f'{self.filename_all}/Curve_time_{_str}_scenario_{str(last_scenario)}.csv'
         df = pd.read_csv(filename)
         self.segments = df.values.tolist()
