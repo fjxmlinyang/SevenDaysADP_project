@@ -63,7 +63,7 @@ class OptModelSetUp():
             LHS = self.e[k] + grb.quicksum(self.psh_gen[j] / self.psh_system.parameter['GenEfficiency'] for j in self.psh_system.parameter['PSHName']) \
                                           - grb.quicksum(self.psh_pump[j] * self.psh_system.parameter['PumpEfficiency'] for j in self.psh_system.parameter['PSHName'])
             RHS = self.e_prev[self.one_day_period-1][k]
-            ###if we calculate the first one, we use 'SOC0', and the last we use 'End'; or we choose the SOC0 to "beginning", at the same time the last we use 'SOC'.
+            ### if we calculate the first one, we use 'SOC0', and the last we use 'End'; or we choose the SOC0 to "beginning", at the same time the last we use 'SOC'.
             self.gur_model.addConstr(LHS == RHS, name='%s_%s' % ('SOC0', k))
 
 
@@ -100,7 +100,7 @@ class OptModelSetUp():
             self.gur_model.addConstr(LHS == RHS, name='%s_%s' % ('curve', k))
 
     def add_constraint_soc(self):
-    ### how to constraint for  d_1I_2 <= soc_1 <=d_1I_1?############################
+    ### how to constraint for  d_1I_2 <= soc_1 <=d_1I_1? ############################
         for k in self.e_system.parameter['EName']:
             for i in range(self.curve.numbers):
                 name_num = str(i + 1)
@@ -315,6 +315,7 @@ class OptModelSetUp():
             psh = v.X
             self.optimal_seven_e.append(psh)
         print(self.optimal_seven_e)
+
     def x_to_soc(self, point_X):
         # change soc_sum to soc_1 + soc_2 + soc_3
         turn_1 = point_X // self.curve.steps
