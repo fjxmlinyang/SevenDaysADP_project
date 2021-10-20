@@ -20,30 +20,34 @@ class RL_Kernel():
         self.LAC_last_windows = 1 #0#1 #必须是1才可以是DA的price
         self.probabilistic = 0 #1#0
         self.RT_DA = 0 #1#0
-        self.curr_time = None
+        self.curr_day = None
         self.curr_scenario = None
         self.current_stage ='training_50' #'training_500'
         #如果我们要用repetitive DA， 我们需要LAC_last_windows = 0， probabilitsit = 1, DA = 0?
-        self.time_period = 23 #24? #24-1?
+        self.day_period = 6 # now is seven day #24? #24-1?  #dont forget to change the terminal constraint
 
     def main_function(self):
         #time_1 = time.time()
         self.Curr_Scenario_Cost_Total = []
         self.start = 1
-        self.end = 2
+        self.end = 500
         for curr_scenario in range(self.start, self.end):
             self.Curr_Scenario_Price_Total = []
             self.PSH_Results = []
+            self.hours23_Pump_Results = []
+            self.hours23_Gen_Results = []
+            self.hours23_E_Results = []
             self.SOC_Results = []
             self.curr_scenario_cost_total = 0
             self.curr_price_total = []
-            for i in range(self.time_period):
-                self.curr_time = i
+            for i in range(self.day_period):
+                self.curr_day = i
                 self.curr_scenario = curr_scenario
                 self.calculate_optimal_soc()
                 self.get_final_curve_main()
                 self.output_psh_soc()
             self.output_psh_soc_main()
+            print(self.hours23_Gen_Results)
         self.output_curr_cost()
         #time_2 = time.time()
         #print('one iteration time is', time_2-time_1)
@@ -91,11 +95,14 @@ class RL_Kernel():
 
         self.Curr_Scenario_Price_Total.append(self.curr_price_total)
 
-
+        self.hours23_Gen_Results.append([0])
+        self.hours23_Pump_Results.append([0])
         self.df = pd.DataFrame(
-            {'Price_Results_' + str(self.curr_scenario): self.Curr_Scenario_Price_Total[0], 'SOC_Results_' + str(self.curr_scenario): self.SOC_Results, 'PSH_Results_' + str(self.curr_scenario): self.PSH_Results})
-        # df = pd.DataFrame({'PSH_Results_' + str(curr_scenario): PSH_Results})
-        # df.to_csv(filename)
+            {'Price_Results_' + str(self.curr_scenario): self.Curr_Scenario_Price_Total[0], \
+             'SOC_Results_' + str(self.curr_scenario): self.SOC_Results, \
+             'PSH_Results_' + str(self.curr_scenario): self.PSH_Results, \
+             'hours23_Gen_Results' + str(self.curr_scenario): self.hours23_Gen_Results, \
+             'hours23_Pump_Results' + str(self.curr_scenario): self.hours23_Pump_Results})
         if self.curr_scenario == self.start:
             self.df_total = self.df
         else:
@@ -106,6 +113,13 @@ class RL_Kernel():
 
         ##calculate total cost
         self.Curr_Scenario_Cost_Total.append(self.curr_scenario_cost_total)
+
+        # self.df = pd.DataFrame(
+        #     {'Price_Results_' + str(self.curr_scenario): self.Curr_Scenario_Price_Total[0], \
+        #      'SOC_Results_' + str(self.curr_scenario): self.SOC_Results, \
+        #      'PSH_Results_' + str(self.curr_scenario): self.PSH_Results, \
+        #      'hours23_Gen_Results' + str(self.curr_scenario): self.hours23_Gen_Results, \
+        #      'hours23_Pump_Results' + str(self.curr_scenario): self.hours23_Pump_Results})
 
     def output_psh_soc(self):
         self.SOC_Results.append(self.curr_model.optimal_soc_sum)
@@ -119,12 +133,16 @@ class RL_Kernel():
         #
         self.curr_price_total.append(self.curr_model.curr_price)
 
+        #add 23hours situation
+        self.hours23_Gen_Results.append(self.curr_model.optimal_hour23_psh_gen)
+        self.hours23_Pump_Results.append(self.curr_model.optimal_hour23_psh_pump)
+
 
     def calculate_optimal_soc(self):
         self.curr_model_para = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date,
-                                             self.curr_time, self.curr_scenario, self.current_stage, self.time_period)        # LAC_last_windows,  probabilistic, RT_DA, date, LAC_bhour, scenario
+                                             self.curr_day, self.curr_scenario, self.current_stage, self.day_period)        # LAC_last_windows,  probabilistic, RT_DA, date, curr_day, scenario
 
-        print('##############################' + 'scenario = ' + str(self.curr_scenario) + ', and curr_time = ' + str(self.curr_time) + '######################################')
+        print('##############################' + 'scenario = ' + str(self.curr_scenario) + ', and curr_day = ' + str(self.curr_day) + '######################################')
 
 
 
@@ -136,29 +154,36 @@ class RL_Kernel():
         print('################################## e_system set up ##################################')
         self.e_system = ESystem(self.curr_model_para)
         self.e_system.set_up_parameter()
+
+        ####add initital soc for everyday
+        if self.curr_model_para.day_period != 1:
+            temp = str(self.curr_model_para.day_period-1)
+            filename = './Output_Curve/LAC_Solution_System_SOC_'+ temp +'.csv'
+            Data = pd.read_csv(filename)
+            df = pd.DataFrame(Data)
+            list = df.iloc[:,2]
+            initial_soc = list[0]
+            self.e_system.parameter['EStart'] = initial_soc
+
         print(self.e_system.parameter)
 
         print('################################## lmp_system set up ##################################')
         self.lmp = LMP(self.curr_model_para)
-        self.lmp.set_up_parameter()
-        self.lmp.set_up_parameter_previous()
-        #print(self.lmp.date)
-        print('lmp_quantiles=', self.lmp.lmp_quantiles)
-        print('lmp_scenarios=', self.lmp.lmp_scenarios)
-        print('lmp_Nlmp_s=', self.lmp.Nlmp_s)
+        self.lmp.seven_set_up_parameter()
+
 
         print('################################## curve set up ##################################')
-        self.old_curve = Curve(100, 0, 3000, self.time_period)
+        self.old_curve = Curve(100, 0, 3000, self.day_period)
 
 
         ####不同的开始，不同的curve
-        if self.curr_scenario == 1 and self.curr_time == 0:
+        if self.curr_scenario == 1 and self.curr_day == 0:
             self.old_curve.output_initial_curve()
 
         if self.LAC_last_windows == 0 and self.probabilistic == 1 and self.RT_DA == 0 and self.curr_scenario == 1:
             last_scenario = 10000
             self.old_curve.input_tuned_initial_curve(last_scenario)
-        self.old_curve.input_curve(self.curr_time, self.curr_scenario - 1)
+        self.old_curve.input_curve(self.curr_day, self.curr_scenario - 1)
         print(self.old_curve.segments)
 
         print('################################## ADP training model set up ##################################')
@@ -172,9 +197,9 @@ class RL_Kernel():
 
 
     def calculate_new_soc(self, initial_soc):
-        pre_model = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time,
-                                  self.curr_scenario, self.current_stage, self.time_period)
-        # LAC_last_windows,  probabilistic, RT_DA, date, LAC_bhour, scenario
+        pre_model = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_day,
+                                  self.curr_scenario, self.current_stage, self.day_period)
+        # LAC_last_windows,  probabilistic, RT_DA, date, curr_day, scenario
 
         psh_system_2 = PshSystem(pre_model)
         psh_system_2.set_up_parameter()
@@ -184,27 +209,27 @@ class RL_Kernel():
         e_system_2.set_up_parameter()
         e_system_2.parameter['EStart'] = initial_soc
         #print('e_system_2.parameter is ' + str(e_system_2.parameter))
-        if self.curr_time != self.time_period - 1:
+        if self.curr_day != self.day_period - 1:
             # lmp, time = t+1, scenario= n
             self.prev_model = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date,
-                                            self.curr_time + 1,
-                                            self.curr_scenario, self.current_stage, self.time_period)
+                                            self.curr_day + 1,
+                                            self.curr_scenario, self.current_stage, self.day_period)
             self.prev_lmp = LMP(self.prev_model)
-            self.prev_lmp.set_up_parameter()
-            self.prev_lmp.set_up_parameter_previous()
+            #self.prev_lmp.set_up_parameter()
+            self.prev_lmp.seven_set_up_parameter()
             # curve, time = t+1, scenario= n-1
-            self.pre_curve = Curve(100, 0, 3000, self.time_period)
-            self.pre_curve.input_curve(self.curr_time + 1, self.curr_scenario - 1)
-        elif self.curr_time == self.time_period - 1:
+            self.pre_curve = Curve(100, 0, 3000, self.day_period)
+            self.pre_curve.input_curve(self.curr_day + 1, self.curr_scenario - 1)
+        elif self.curr_day == self.day_period - 1:
             self.prev_model = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date,
-                                            self.curr_time,
-                                            self.curr_scenario, self.current_stage, self.time_period)
+                                            self.curr_day,
+                                            self.curr_scenario, self.current_stage, self.day_period)
             self.prev_lmp = LMP(self.prev_model)
-            self.prev_lmp.set_up_parameter()
-            self.prev_lmp.set_up_parameter_previous()
+            #self.prev_lmp.set_up_parameter()
+            self.prev_lmp.seven_set_up_parameter()
 
-            self.pre_curve = Curve(100, 0, 3000, self.time_period)
-            self.pre_curve.input_curve(self.curr_time, self.curr_scenario - 1)
+            self.pre_curve = Curve(100, 0, 3000, self.day_period)
+            self.pre_curve.input_curve(self.curr_day, self.curr_scenario - 1)
 
         model_1 = Model('DAMarket')
         #ADP_train_model_para = pre_model
@@ -254,10 +279,16 @@ class RL_Kernel():
         beta = 0.001
         #让无法到的点设置成为着-10000
         for value in self.second_curve_soc:
+            #self.day_period - self.curr_day
             distance = value - float(self.e_system.parameter['EEnd'])
-            left_cod = distance <= 0 and (abs(distance) < (self.time_period - self.curr_time) * float(
+            # left_cod = distance <= 0 and (abs(distance) < (self.day_period - self.curr_day) * float(
+            #     self.psh_system.parameter['PumpMax']) * (float(self.psh_system.parameter['PumpEfficiency']) - beta))
+            # right_cod = distance > 0 and (abs(distance) < (self.day_period - self.curr_day) * float(
+            #     self.psh_system.parameter['GenMax']) / (float(self.psh_system.parameter['GenEfficiency']) + beta))
+#self.day_period这个要注意！！！！！！还没改
+            left_cod = distance <= 0 and (abs(distance) < (self.day_period - self.day_period) * float(
                 self.psh_system.parameter['PumpMax']) * (float(self.psh_system.parameter['PumpEfficiency']) - beta))
-            right_cod = distance > 0 and (abs(distance) < (self.time_period - self.curr_time) * float(
+            right_cod = distance > 0 and (abs(distance) < (self.day_period - self.day_period) * float(
                 self.psh_system.parameter['GenMax']) / (float(self.psh_system.parameter['GenEfficiency']) + beta))
             if left_cod or right_cod:
                 # if left_value < 0 and right_value > 0:
@@ -284,10 +315,10 @@ class RL_Kernel():
         MultiRL.LAC_last_windows = self.LAC_last_windows  # 1#0
         MultiRL.probabilistic = self.probabilistic  # 0#1
         MultiRL.RT_DA = self.RT_DA #1
-        MultiRL.curr_time = self.curr_time
+        MultiRL.curr_day = self.curr_day
         MultiRL.curr_scenario = self.curr_scenario
         MultiRL.current_stage = self.current_stage #'training_500'
-        MultiRL.time_period = self.time_period  # 'training_500'
+        MultiRL.day_period = self.day_period  # 'training_500'
         #initial_soc_list = [0, 30, 60, 90, 120, 150, 180, 210, 240, 270]
         print(initial_soc_list)
         MultiRL.CalOpt(initial_soc_list)
@@ -364,13 +395,7 @@ class RL_Kernel():
 
         print(self.second_curve_slope)
 
-            # _cur = len(self.second_curve_slope) - i - 1
-            # if self.check_soc_curve[i] == 0:
-            #     if _cur != 0 and self.second_curve_slope[_cur] > self.second_curve_slope[_cur-1] and self.second_curve_slope[_cur] < self.old_curve.intial_slope_set:
-            #         self.second_curve_slope[_cur - 1] = self.second_curve_slope[_cur]
-            #     elif _cur != 0 and self.second_curve_slope[_cur] > self.second_curve_slope[_cur-1] and self.second_curve_slope[_cur] > self.old_curve.intial_slope_set:
-            #         self.second_curve_slope[_cur] = self.old_curve.intial_slope_set
-            #         self.second_curve_slope[_cur - 1] = self.old_curve.intial_slope_set
+
 
 
 
@@ -434,31 +459,32 @@ class RL_Kernel():
 
     def output_curve(self):
     #output the curve
+        curr_day = self.curr_model_para.curr_day
         scenario = self.curr_scenario
-        filename = self.e_system.e_start_folder + '/Curve_' + 'time_' + str(self.curr_model_para.LAC_bhour) + '_scenario_' +  str(scenario) + '.csv'
+        filename = self.e_system.e_start_folder + '/Curve_' + 'time_' + str(curr_day) + '_scenario_' +  str(scenario) + '.csv'
         df = pd.DataFrame(self.curve.segments, columns = ['soc_segment','slope'])
         df.to_csv(filename, index=False, header=True)
 
 
     def output_curve_sum(self):
         #input the original
-        curr_time = self.curr_model_para.LAC_bhour
+        curr_day = self.curr_model_para.curr_day
         scenario = self.curr_model_para.scenario
 #output_curve_sum这里有问题
         if scenario == 1:
-            filename = self.e_system.e_start_folder + '/Curve_' + 'time_' + str(curr_time) + '_scenario_' + str(scenario) + '.csv'
+            filename = self.e_system.e_start_folder + '/Curve_' + 'time_' + str(curr_day) + '_scenario_' + str(scenario) + '.csv'
             df = pd.read_csv(filename)
         else:
-            filename = self.e_system.e_start_folder + '/Curve_total_' + 'time_' + str(self.curr_model_para.LAC_bhour) + '.csv'
+            filename = self.e_system.e_start_folder + '/Curve_total_' + 'time_' + str(self.curr_model_para.curr_day) + '.csv'
             df = pd.read_csv(filename)
         #output the current
 
 
-        #df_cur = pd.DataFrame(self.curve.segments, columns=['soc_segment', 'slope_time_' + str(curr_time) + str(scenario)])
-        df_cur = pd.DataFrame(self.curve.point_Y, columns=['slope_time_' + str(curr_time) + str(scenario)])
+        #df_cur = pd.DataFrame(self.curve.segments, columns=['soc_segment', 'slope_time_' + str(curr_day) + str(scenario)])
+        df_cur = pd.DataFrame(self.curve.point_Y, columns=['slope_time_' + str(curr_day) + str(scenario)])
         df = pd.concat([df, df_cur], axis = 1)
 
-        filename = self.e_system.e_start_folder + '/Curve_total_' + 'time_' + str(self.curr_model_para.LAC_bhour)+'.csv'
+        filename = self.e_system.e_start_folder + '/Curve_total_' + 'time_' + str(self.curr_model_para.curr_day)+'.csv'
         df.to_csv(filename, index=False, header=True)
 
 
@@ -466,18 +492,12 @@ class RL_Kernel():
         #put the soc_sum in, we get the profit
         point_x_soc = self.x_to_soc(point_X)
         point_profit = []
-        for s in range(self.lmp.Nlmp_s):
-            p_s = self.lmp.lmp_quantiles[s]
-            for j in self.psh_system.parameter['PSHName']:
-                point_profit.append((self.optimal_psh_gen_sum - self.optimal_psh_pump_sum) * self.lmp.lmp_scenarios[s][0] * p_s)
-        # for j in self.psh_system.parameter['PSHName']:
-        #     point_profit.append((self.psh_gen[j] - self.psh_pump[j]) * self.lmp.lmp_scenarios[0][0])
 
-        #self.curr_cost = sum(point_profit)
-        for k in self.e_system.parameter['EName']:
-            for i in range(self.curve.numbers):
-                bench_num = i
-                point_profit.append(self.curve.point_Y[bench_num + 1] * point_x_soc[bench_num])
+        point_profit.append((self.optimal_psh_gen_sum - self.optimal_psh_pump_sum) * self.lmp.lmp_scenarios)
+
+        for i in range(self.curve.numbers):
+            bench_num = i
+            point_profit.append(self.curve.point_Y[bench_num + 1] * point_x_soc[bench_num])
         point_profit_sum = sum(point_profit)
         return point_profit_sum
 
@@ -506,7 +526,8 @@ class RL_Kernel():
 
 train = RL_Kernel()
 #test.calculate_old_curve()
-date_list =['March 07 2019', 'April 01 2019', 'April 15 2019', 'April 22 2019']
+#date_list =['March 07 2019', 'April 01 2019', 'April 15 2019', 'April 22 2019']
+date_list = ['Everyday']
 #alpha = [0, 0.2, 0.5, 0.8, 1]
 #date_list =['April 22 2019']
 alpha = [0.2]

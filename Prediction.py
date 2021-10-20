@@ -11,12 +11,12 @@ class Prediction():
         self.LAC_last_windows = None #0#1 #必须是1才可以是DA的price
         self.probabilistic = None #1#0
         self.RT_DA = None #1#0
-        self.curr_time = None
+        self.curr_tday = None
         self.curr_scenario = None
         self.current_stage ='sample' #'training_500'
             # #用sample就调整位置了，需不需要专门一个来记录位置的？
         #如果我们要用repetitive DA， 我们需要LAC_last_windows = 0， probabilitsit = 1, DA = 0?
-        self.time_period = 23 #24-1
+        self.day_period = 7 #24-1
 
     def main_function(self):
         self.Curr_Scenario_Cost_Total = []
@@ -26,8 +26,8 @@ class Prediction():
             self.PSH_Results = []
             self.SOC_Results = []
             self.curr_scenario_cost_total = 0
-            for i in range(self.time_period):
-                self.curr_time = i
+            for i in range(self.day_period):
+                self.curr_day = i
                 self.curr_scenario = curr_scenario
                 self.calculate_optimal_soc()
                 #self.get_final_curve_main()
@@ -38,10 +38,10 @@ class Prediction():
 
 
     def calculate_optimal_soc(self):
-        self.curr_model_para = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_time, self.curr_scenario, self.current_stage, self.time_period)
-        # LAC_last_windows,  probabilistic, RT_DA, date, LAC_bhour, scenario
+        self.curr_model_para = CurrModelPara(self.LAC_last_windows, self.probabilistic, self.RT_DA, self.date, self.curr_day, self.curr_scenario, self.current_stage, self.day_period)
+        # LAC_last_windows,  probabilistic, RT_DA, date, Curr_day, scenario
 
-        print('##############################' + 'scenario = ' + str(self.curr_scenario) + ', and curr_time = ' + str(self.curr_time) + '######################################')
+        print('##############################' + 'scenario = ' + str(self.curr_scenario) + ', and curr_day = ' + str(self.curr_day) + '######################################')
 
 
 
@@ -58,28 +58,24 @@ class Prediction():
         print('################################## lmp_system set up ##################################')
         self.lmp = LMP(self.curr_model_para)
         self.lmp.predict_set_up_parameter()
-        #print(self.lmp.date)
-        #print('lmp_quantiles=', self.lmp.lmp_quantiles)
-        #print('lmp_scenarios=', self.lmp.lmp_scenarios)
-        #print('lmp_Nlmp_s=', self.lmp.Nlmp_s)
 
         print('################################## curve set up ##################################')
-        self.old_curve = Curve(100, 0, 3000, self.time_period)
+        self.old_curve = Curve(100, 0, 3000, self.day_period)
 
 
         ####不同的开始，不同的curve
-        # if self.curr_scenario == 1 and self.curr_time == 0:
+        # if self.curr_scenario == 1 and self.curr_day == 0:
         #     self.old_curve.output_initial_curve()
         # #
         # if self.LAC_last_windows == 0 and self.probabilistic == 1 and self.RT_DA == 0 and self.curr_scenario == 1:
         #     last_scenario = 10000
         #     self.old_curve.input_tuned_initial_curve(last_scenario)
-        # self.old_curve.input_curve(self.curr_time, self.curr_scenario - 1)
+        # self.old_curve.input_curve(self.curr_day, self.curr_scenario - 1)
 
 
         #choose the scenario you need
         prediction_scenario = 2398
-        self.old_curve.input_prediction_curve(prediction_scenario, self.curr_time)
+        self.old_curve.input_prediction_curve(prediction_scenario, self.curr_day)
         print(self.old_curve.segments)
         print(self.old_curve.point_Y)
 

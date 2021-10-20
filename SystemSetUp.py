@@ -83,15 +83,15 @@ class ESystem(System):
         self.Output_folder='./Output_Curve'
         #here are for rolling model
         #here we can set the benchmark?
-        if self.curr_model.LAC_bhour == 0:
+        if self.curr_model.curr_day == 0:
             self.input_parameter('Start', 'EStart')
             self.e_start_folder = self.Output_folder
         elif self.curr_model.LAC_last_windows:
-            self.filename = self.Output_folder + '/LAC_Solution_System_SOC_' + str(self.curr_model.LAC_bhour - 1) + '.csv'
+            self.filename = self.Output_folder + '/LAC_Solution_System_SOC_' + str(self.curr_model.curr_day - 1) + '.csv'
             self.input_parameter('SOC', 'EStart')
             self.e_start_folder = self.Output_folder
         else:
-            self.filename = self.Output_folder + '/LAC_Solution_System_SOC_' + str(self.curr_model.LAC_bhour - 1) + '.csv'
+            self.filename = self.Output_folder + '/LAC_Solution_System_SOC_' + str(self.curr_model.curr_day - 1) + '.csv'
             self.input_parameter('SOC', 'EStart')
             self.e_start_folder = self.Output_folder
         self.Input_folder = None
@@ -109,21 +109,22 @@ class LMP(System):
             # filename = Input_folder + '\LMP_Hindsight' + '.csv'
             #self.filename = self.Input_folder + '/prd_dataframe_wlen_24_'+ self.curr_model.date + '.csv'
             self.filename = self.Input_folder + '/prd_dataframe_wlen_' + str(
-                self.curr_model.time_period + 1  - self.curr_model.LAC_bhour) + '_' + self.curr_model.date + '.csv'
+                self.curr_model.time_period + 1 - self.curr_model.curr_day) + '_' + self.curr_model.date + '.csv'
         else:
-            # filename = Input_folder+'\LMP_Scenarios_' + 'T' + str(LAC_bhour) +'_DA'+ '.csv'
+            # filename = Input_folder+'\LMP_Scenarios_' + 'T' + str(curr_day) +'_DA'+ '.csv'
             if self.curr_model.probabilistic and self.Input_all_total == './Input_bootstrap':
-                self.filename = self.Input_folder + '/DA_lmp_Scenarios_wlen_' + str(24-self.curr_model.LAC_bhour) + '_'+ self.curr_model.date+'_550' + '.csv'
+                self.filename = self.Input_folder + '/DA_lmp_Scenarios_wlen_' + str(24-self.curr_model.curr_day) + '_'+ self.curr_model.date+'_550' + '.csv'
             elif self.curr_model.probabilistic and self.Input_all_total == './Input_test':
-                self.filename = self.Input_folder + '/DA_lmp_Scenarios_wlen_' + str(24-self.curr_model.LAC_bhour) + '_'+ self.curr_model.date+'_550' + '.csv'
+                self.filename = self.Input_folder + '/DA_lmp_Scenarios_wlen_' + str(24-self.curr_model.curr_day) + '_'+ self.curr_model.date+'_550' + '.csv'
             elif self.curr_model.probabilistic and self.Input_all_total == './Input_sample':
-                self.filename = self.Input_folder + '/DA_lmp_Scenarios_wlen_' + str(self.curr_model.time_period + 1 - self.curr_model.LAC_bhour) + '_' + self.curr_model.date + '_50' + '.csv'
+                self.filename = self.Input_folder + '/DA_lmp_Scenarios_wlen_' + str(self.curr_model.time_period + 1 - self.curr_model.curr_day) + '_' + self.curr_model.date + '_50' + '.csv'
             elif self.curr_model.probabilistic and self.Input_all_total == './Input_Curve':
-                self.filename = self.Input_folder + '/DA_lmp_Scenarios_wlen_' + str(24-self.curr_model.LAC_bhour) + '_'+ self.curr_model.date+'_50' + '.csv'
+                self.filename = self.Input_folder + '/DA_lmp_Scenarios_wlen_' + str(24-self.curr_model.curr_day) + '_'+ self.curr_model.date+'_50' + '.csv'
             else:
-                self.filename = self.Input_folder + '/prd_dataframe_wlen_'+ str(24-self.curr_model.LAC_bhour)+'_'+ self.curr_model.date + '.csv'
-        
-        
+                self.filename = self.Input_folder + '/prd_dataframe_wlen_'+ str(24-self.curr_model.curr_day)+'_'+ self.curr_model.date + '.csv'
+
+        self.filename = './Scenarios_Prediction/day' + str(self.curr_model.time_period) + '.csv'
+
         Data = pd.read_csv(self.filename)
         df = pd.DataFrame(Data)
         Column_name = list(Data.columns)
@@ -145,15 +146,6 @@ class LMP(System):
                 read_curr = (self.curr_model.scenario) % 50 - 1
                 self.lmp_scenarios.append(list(df[Column_name[read_curr]]))
 
-    #            self.Nlmp_s=len(Column_name)
-    #             for i in range(self.Nlmp_s):
-    #                 # probability of each scenario is evenly distributed
-    #                 self.lmp_quantiles.append(1.0 / self.Nlmp_s)
-    # ##only change here!!!
-    #                 #read_curr = self.curr_model.scenario
-    #                 read_curr = (self.curr_model.scenario) % 50 -1
-    #                 self.lmp_scenarios.append(list(df[Column_name[read_curr]]))
-
             else:
                 # for deterministic forecast, there is a single scenario
                 self.Nlmp_s = 1
@@ -162,7 +154,6 @@ class LMP(System):
                 self.lmp_scenarios.append(list(df['prd']))
             #所以要用scneario,我们需要LAC_last_windows = 0, probabilistic = 1, DA = 0
             #如果我们要用repetitive DA， 我们需要LAC_last_windows = 0， probabilitsit = 1, DA = 0?
-
 
         self.Input_folder = None
         self.filename = None
@@ -174,7 +165,7 @@ class LMP(System):
         self.Input_folder = self.Input_folder_parent + '/' + self.curr_model.date
 
         self.filename = self.Input_folder + '/Prediction_lmp_Scenarios_wlen_' + str(
-            self.curr_model.time_period + 1 - self.curr_model.LAC_bhour) +'_50' + '.csv'
+            self.curr_model.time_period + 1 - self.curr_model.curr_day) +'_50' + '.csv'
         Data = pd.read_csv(self.filename)
         df = pd.DataFrame(Data)
         Column_name = list(Data.columns)
@@ -190,36 +181,31 @@ class LMP(System):
         self.filename = None
         self.Output_folder = None
 
-    def set_up_parameter_previous(self):
-        #self.lmp_quantiles_prev[i][j]是关于第i小时，第j个scenario得
-        self.lmp_quantiles_prev = []
+    def seven_set_up_parameter(self):
 
         self.lmp_scenarios_prev = []
-        for i in range(23):
-            temp_lmp_quantile_prev = []
-            temp_lmp_scenarios_prev = []
-            self.filename = './Scenarios_Prediction/DECO_Scenarios_Week_of_WindSolLoad_October 15 2019_Till_Day1_30daysTrain.csv'
-            Data = pd.read_csv(self.filename)
-            df = pd.DataFrame(Data)
-            Column_name = list(Data.columns)
-            # DA_lmp=[]???
-            self.Nlmp_s = 1
-            temp_lmp_quantile_prev.append(1.0 / self.Nlmp_s)
-            read_curr = (self.curr_model.scenario - 1)
-            temp_lmp_scenarios_prev=list(df[Column_name[read_curr]])
-            self.lmp_quantiles_prev.append(temp_lmp_quantile_prev)
-            self.lmp_scenarios_prev.append(temp_lmp_scenarios_prev)
-            print(list(df[Column_name[read_curr]]))
-            print(self.lmp_scenarios_prev)
+        self.filename = './DataMain/day' + str(self.curr_model.curr_day + 1) + '.csv'
+        Data = pd.read_csv(self.filename)
+        df = pd.DataFrame(Data)
+        #read previous 23 hours lmp
+        read_curr = (self.curr_model.scenario - 1) % 50
+        temp = list(df.iloc[0:23, read_curr])
+        self.lmp_scenarios_prev = temp
+
+        #read current last hour lmp
+        temp = df.iloc[23,read_curr]
+        self.Nlmp_s = 1
+        self.lmp_scenarios = temp
 
 
 
 
-test_1=CurrModelPara(1, 1, 1, 'April', 1, 5, 'sample', 23)        # LAC_last_windows,  probabilistic, RT_DA, date, LAC_bhour, scenario
 
-test = LMP(test_1)
-
-test.set_up_parameter_previous()
+# test_1=CurrModelPara(1, 1, 1, 'April', 1, 5, 'sample', 23)        # LAC_last_windows,  probabilistic, RT_DA, date, curr_day, scenario
+#
+# test = LMP(test_1)
+#
+# test.set_up_parameter_previous()
 
 
 

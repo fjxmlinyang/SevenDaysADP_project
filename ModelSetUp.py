@@ -47,7 +47,7 @@ class OptModelSetUp():
         print(type(self.e_system.parameter['EStart']))
         print(type(self.e['Reservoir1']))
         for k in self.e_system.parameter['EName']:
-            for i in range(self.LAC_period-1):
+            for i in range(self.one_day_period-1):
                 if i == 0:
                     LHS = self.e_prev[i][k] + grb.quicksum(self.psh_gen_prev[i][j] / self.psh_system.parameter['GenEfficiency'] for j in self.psh_system.parameter['PSHName']) \
                                                   - grb.quicksum(self.psh_pump_prev[i][j] * self.psh_system.parameter['PumpEfficiency'] for j in self.psh_system.parameter['PSHName'])
@@ -62,8 +62,8 @@ class OptModelSetUp():
         for k in self.e_system.parameter['EName']:
             LHS = self.e[k] + grb.quicksum(self.psh_gen[j] / self.psh_system.parameter['GenEfficiency'] for j in self.psh_system.parameter['PSHName']) \
                                           - grb.quicksum(self.psh_pump[j] * self.psh_system.parameter['PumpEfficiency'] for j in self.psh_system.parameter['PSHName'])
-            RHS = self.e_prev[self.LAC_period-1][k]
-            ###if we calculate the first one, we use 'SOC0', and the last we use 'End'; or we choose the SOC0 to "beginning", at the same time the last we use 'SOC'.
+            RHS = self.e_prev[self.one_day_period-1][k]
+            ### if we calculate the first one, we use 'SOC0', and the last we use 'End'; or we choose the SOC0 to "beginning", at the same time the last we use 'SOC'.
             self.gur_model.addConstr(LHS == RHS, name='%s_%s' % ('SOC0', k))
 
 
@@ -74,7 +74,7 @@ class OptModelSetUp():
             self.gur_model.addConstr(self.psh_pump[j] <= self.psh_system.parameter['PumpMax'], name='%s_%s' % ('psh_pump_max0', j))
             self.gur_model.addConstr(self.psh_pump[j] >= self.psh_system.parameter['PumpMin'], name='%s_%s' % ('psh_pump_min0', j))
 
-            for i in range(self.LAC_period):
+            for i in range(self.one_day_period):
                 self.gur_model.addConstr(self.psh_gen_prev[i][j] <= self.psh_system.parameter['GenMax'], name='%s_%s' % ('psh_gen_max'+str(i),j))
                 self.gur_model.addConstr(self.psh_gen_prev[i][j] >= self.psh_system.parameter['GenMin'], name='%s_%s' % ('psh_gen_min'+str(i),j))
                 self.gur_model.addConstr(self.psh_pump_prev[i][j] <= self.psh_system.parameter['PumpMax'], name='%s_%s' % ('psh_pump_max'+str(i),j))
@@ -85,9 +85,9 @@ class OptModelSetUp():
             self.gur_model.addConstr(self.e[k] <= self.e_system.parameter['EMax'], name='%s_%s' % ('e_max0', k))
             self.gur_model.addConstr(self.e[k] >= self.e_system.parameter['EMin'], name='%s_%s' % ('e_min0', k))
 
-            for i in range(self.LAC_period):
-                self.gur_model.addConstr(self.e_prev[i][k] <= self.e_system.parameter['EMax'], name='%s_%s' % ('e_max'+str(i), k))
-                self.gur_model.addConstr(self.e_prev[i][k] >= self.e_system.parameter['EMin'], name='%s_%s' % ('e_min0'+str(i), k))
+            for i in range(self.one_day_period):
+                self.gur_model.addConstr(self.e_prev[i][k] <= self.e_system.parameter['EMax'], name='%s_%s' % ('e_max'+ str(i), k))
+                self.gur_model.addConstr(self.e_prev[i][k] >= self.e_system.parameter['EMin'], name='%s_%s' % ('e_min0'+ str(i), k))
 
 
     def add_constraint_curve(self):
@@ -100,7 +100,7 @@ class OptModelSetUp():
             self.gur_model.addConstr(LHS == RHS, name='%s_%s' % ('curve', k))
 
     def add_constraint_soc(self):
-    ### how to constraint for  d_1I_2 <= soc_1 <=d_1I_1?############################
+    ### how to constraint for  d_1I_2 <= soc_1 <=d_1I_1? ############################
         for k in self.e_system.parameter['EName']:
             for i in range(self.curve.numbers):
                 name_num = str(i + 1)
@@ -121,50 +121,58 @@ class OptModelSetUp():
                                     name='%s_%s' % ('soc_' + name_num + '_min', k))
 
     def add_constraint_I(self):
-        for s in range(self.lmp.Nlmp_s):
-            for k in self.e_system.parameter['EName']:
-                for i in range(self.curve.numbers - 1):
-                    name_num = str(i + 1)
-                    name_num_next = str(i + 2)
-                    bench_num = i
-                    self.gur_model.addConstr(self.I[bench_num + 1][k] <= self.I[bench_num][k],
-                                    name='%s_%s' % ('I_' + name_num_next + '_' + name_num, k))
+        for k in self.e_system.parameter['EName']:
+            for i in range(self.curve.numbers - 1):
+                name_num = str(i + 1)
+                name_num_next = str(i + 2)
+                bench_num = i
+                self.gur_model.addConstr(self.I[bench_num + 1][k] <= self.I[bench_num][k],
+                                name='%s_%s' % ('I_' + name_num_next + '_' + name_num, k))
 
     def add_contraint_terminal(self):
         beta = 0.001  # 0.001
         for k in self.e_system.parameter['EName']:
-            curr_time = self.curr_model_para.time_period - self.curr_model_para.LAC_bhour
+            curr_day = self.curr_model_para.day_period - self.curr_model_para.curr_day
             LHS_1 = self.e[k] - self.e_system.parameter['EEnd']
-            RHS_1 = (curr_time) * self.psh_system.parameter['GenMax'] / (
+            RHS_1 = (curr_day) * self.psh_system.parameter['GenMax'] / (
                         self.psh_system.parameter['GenEfficiency'] + beta)  # PSHmax_g[0] / PSHefficiency[0]
             self.gur_model.addConstr(LHS_1 <= RHS_1, name='%s_%s' % ('final_upper', k))
         for k in self.e_system.parameter['EName']:
-            curr_time = self.curr_model_para.time_period - self.curr_model_para.LAC_bhour
+            curr_day = self.curr_model_para.day_period - self.curr_model_para.curr_day
             LHS_2 = self.e[k] - self.e_system.parameter['EEnd']
-            RHS_2 = -(curr_time) * self.psh_system.parameter['PumpMax'] * (
+            RHS_2 = -(curr_day) * self.psh_system.parameter['PumpMax'] * (
                         self.psh_system.parameter['PumpEfficiency'] - beta)  # PSHmax_p[0] * PSHefficiency[0]
             self.gur_model.addConstr(LHS_2 >= RHS_2, name='%s_%s' % ('final_lower', k))
 
+    def add_week_contraint_terminal(self):
+        for k in self.e_system.parameter['EName']:
+            LHS = self.e[k] - self.e_system.parameter['EEnd']
+            RHS = 0
+            self.gur_model.addConstr(LHS == RHS, name='%s_%s' % ('final_up_down', k))
+
+
 ##the following is for set upt elements of optimization problems
     def set_up_week_variable(self):
-    #add gen/pump
-        self.LAC_period = 23
+
+    # add gen_prev, pump_prev, e_prev
+        self.one_day_period = 23
 
         self.psh_gen_prev = []
         self.psh_pump_prev  = []
 
         self.e_prev = []
-        for i in range(self.LAC_period):
+        for i in range(self.one_day_period):
             name_num = str(i + 1)
-            self.psh_gen_prev.append((self.add_var_psh('psh_gen_' + name_num)))
-            self.psh_pump_prev.append((self.add_var_psh('psh_pump_' + name_num)))
-            self.e_prev.append((self.add_var_e('e_' + name_num)))
+            self.psh_gen_prev.append((self.add_var_psh('first_23_psh_gen_' + name_num)))
+            self.psh_pump_prev.append((self.add_var_psh('first_23_psh_pump_' + name_num)))
+            self.e_prev.append((self.add_var_e('first_23_e_' + name_num)))
 
+    # add gen/pump
         self.psh_gen = self.add_var_psh('psh_gen_main')
         self.psh_pump = self.add_var_psh('psh_pump_main')
-        self.e = self.add_var_e('e_main')
 
-    # add e
+    #add e
+        self.e = self.add_var_e('e_main')
 
 
     #add soc and I
@@ -187,6 +195,7 @@ class OptModelSetUp():
         self.gur_model.update()
 
     def set_up_constraint(self):
+
     # rolling constraint E_start = E_end +pump + gen
         self.add_constraint_week_rolling()
     # upper and lower constraint
@@ -198,27 +207,17 @@ class OptModelSetUp():
     # constraint for I_1<=I_2<=I_3
         self.add_constraint_I()
     # terminal constraint
-        self.add_contraint_terminal()
+        if self.curr_model_para.curr_day == 6:####6:
+            self.add_week_contraint_terminal()
 
         self.gur_model.update()
 
     def set_up_week_object(self):
-        # self.profit_max = []
-        # for j in self.psh_system.parameter['PSHName']:
-        #     self.profit_max.append((self.psh_gen[j] - self.psh_pump[j]) * self.lmp.lmp_scenarios[0][0])
-        # for k in self.e_system.parameter['EName']:
-        #     for i in range(self.curve.numbers):
-        #         bench_num = i
-        #         #self.profit_max.append(self.curve.point_Y[bench_num] * self.soc[bench_num][k])
-        #         #curve如果是[soc=0, slope=10],[soc=30,slope=20], 从0-30,slope为30
-        #         self.profit_max.append(self.curve.point_Y[bench_num + 1] * self.soc[bench_num ][k])
-        # print(self.profit_max)
-        # self.obj = quicksum(self.profit_max)
         self.profit_max = []
         for j in self.psh_system.parameter['PSHName']:
-            self.profit_max.append((self.psh_gen[j] - self.psh_pump[j]) * self.lmp.lmp_scenarios[0][0])
-            for i in range(self.LAC_period):
-                self.profit_max.append((self.psh_gen_prev[i][j] - self.psh_pump_prev[i][j]) * self.lmp.lmp_scenarios_prev[i][0])
+            self.profit_max.append((self.psh_gen[j] - self.psh_pump[j]) * self.lmp.lmp_scenarios)
+            for i in range(self.one_day_period):
+                self.profit_max.append((self.psh_gen_prev[i][j] - self.psh_pump_prev[i][j]) * self.lmp.lmp_scenarios_prev[i])
 
         for k in self.e_system.parameter['EName']:
             for i in range(self.curve.numbers):
@@ -240,8 +239,9 @@ class OptModelSetUp():
             soc = v.X
             self.optimal_soc.append(soc)
         self.optimal_soc_sum = sum(self.optimal_soc)
-        a = self.optimal_soc_sum
-        print(a)
+        print(self.optimal_soc_sum)
+
+
 
 
     def get_optimal_gen_pump(self):
@@ -255,8 +255,21 @@ class OptModelSetUp():
         for v in [v for v in self.gur_model.getVars() if 'psh_pump_main' in v.Varname]:
             psh = v.X
             #psh0.append(-psh)
+            #because of list, we sum them
             self.optimal_psh_pump.append(psh)
         self.optimal_psh_pump_sum = sum(self.optimal_psh_pump)
+        print(self.optimal_psh_pump_sum)
+
+        self.optimal_hour23_psh_pump = []
+        self.optimal_hour23_psh_gen = []
+        for v in [v for v in self.gur_model.getVars() if 'first_23_psh_gen' in v.Varname]:
+            psh = v.X
+            self.optimal_hour23_psh_gen.append(psh)
+        for v in [v for v in self.gur_model.getVars() if 'first_23_psh_pump' in v.Varname]:
+            psh = v.X
+            # psh0.append(-psh)
+            # because of list, we sum them
+            self.optimal_hour23_psh_pump.append(psh)
         print(self.optimal_psh_pump_sum)
 ######################################################
 #####################################################
@@ -277,30 +290,31 @@ class OptModelSetUp():
         point_profit = []
         point_price = 0
         for s in range(self.lmp.Nlmp_s):
-            p_s = self.lmp.lmp_quantiles[s]
-            for j in self.psh_system.parameter['PSHName']:
-                point_profit.append((self.optimal_psh_gen_sum - self.optimal_psh_pump_sum) * self.lmp.lmp_scenarios[s][0] * p_s)
-                point_price = self.lmp.lmp_scenarios[s][0]
-        # for j in self.psh_system.parameter['PSHName']:
-        #     point_profit.append((self.psh_gen[j] - self.psh_pump[j]) * self.lmp.lmp_scenarios[0][0])
+            point_profit.append((self.optimal_psh_gen_sum - self.optimal_psh_pump_sum) * self.lmp.lmp_scenarios)
+            point_price = self.lmp.lmp_scenarios
         self.curr_price = point_price
         self.curr_cost = sum(point_profit)
 
 
     def output_optimal(self):
     #output the e for next time
-        filename = self.e_system.e_start_folder + '/LAC_Solution_System_SOC_'+ str(self.curr_model_para.LAC_bhour) + '.csv'
+        filename = self.e_system.e_start_folder + '/LAC_Solution_System_SOC_'+ str(self.curr_model_para.curr_day) + '.csv'
 
         with open(filename, 'w') as wf:
             wf.write('Num_Period,Reservoir_Name,SOC\n')
             _temp = list(self.e_system.parameter['EName'])[0]
             for v in [v for v in self.gur_model.getVars() if (_temp in v.Varname and 'e_main' in v.Varname)]:
                 self.optimal_e = v.X
-                time = 'T' + str(self.curr_model_para.LAC_bhour)
+                time = 'T' + str(self.curr_model_para.curr_day)
                 name = _temp
                 st = time + ',' + '%s,%.1f' % (name, self.optimal_e) + '\n'
                 wf.write(st)
 
+        self.optimal_seven_e = []
+        for v in [v for v in self.gur_model.getVars() if 'first_23_e' in v.Varname]:
+            psh = v.X
+            self.optimal_seven_e.append(psh)
+        print(self.optimal_seven_e)
 
     def x_to_soc(self, point_X):
         # change soc_sum to soc_1 + soc_2 + soc_3
