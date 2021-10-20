@@ -184,7 +184,7 @@ class LMP(System):
     def seven_set_up_parameter(self):
 
         self.lmp_scenarios_prev = []
-        self.filename = './Scenarios_Prediction/day' + str(self.curr_model.curr_day + 1) + '.csv'
+        self.filename = './DataMain/day' + str(self.curr_model.curr_day + 1) + '.csv'
         Data = pd.read_csv(self.filename)
         df = pd.DataFrame(Data)
         #read previous 23 hours lmp

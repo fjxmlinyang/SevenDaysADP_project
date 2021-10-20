@@ -44,7 +44,7 @@ def Perfect_Opt(Total_hour, Input_folder,Output_folder,date, RT_DA ,probabilisti
     lmp_scenarios = list(lmp_scenarios[0])
 
 
-    e_time_periods = []
+    e_time_periods = [] # 这个比总时间小1
     for i in range(1, len(lmp_scenarios)):
     #for i in range(len(lmp_scenarios)):
         e_time_periods.append('T' + str(i))
@@ -115,7 +115,7 @@ def Perfect_Opt(Total_hour, Input_folder,Output_folder,date, RT_DA ,probabilisti
     # state of charge
     for i in e_time_periods:
         time_id = e_time_periods.index(i)
-        if time_id == 0:
+        if time_id == 0: #相当于除了e0的第一个，需要和e0交换
             for s in range(Nlmp_s):
                 for j in Ename:
                     print('Estart:',float(Estart))
@@ -124,13 +124,13 @@ def Perfect_Opt(Total_hour, Input_folder,Output_folder,date, RT_DA ,probabilisti
                     RHS = 0
                     print(LHS,RHS)
                     model.addConstr(LHS == RHS, name='%s_%s_%d_%d' % ('SOC', j, time_id, s))
-                if time_id == len(e_time_periods) - 1:
-                    for j in Ename:
-                        print('Edayend:', Edayend)
-                        LHS = Edayend - e[s, i, j]
-                        RHS = 0
-                        print(LHS,RHS)
-                        model.addConstr(LHS == RHS, name='%s_%s_%d_%d' % ('SOC', j, len(e_time_periods),s))
+                # if time_id == len(e_time_periods) - 1:
+                #     for j in Ename:
+                #         print('Edayend:', Edayend)
+                #         LHS = Edayend - e[s, i, j]
+                #         RHS = 0
+                #         print(LHS,RHS)
+                #         model.addConstr(LHS == RHS, name='%s_%s_%d_%d' % ('SOC', j, len(e_time_periods),s))
         else:
             for s in range(Nlmp_s):
                 time_previous=e_time_periods[time_id-1]
@@ -175,8 +175,8 @@ def Perfect_Opt(Total_hour, Input_folder,Output_folder,date, RT_DA ,probabilisti
         for j in PSHname:
             psh_max.append((psh0_gen[j] - psh0_pump[j]) * lmp_scenarios[0] * p_s)
             for i in e_time_periods:
-                    lac_lmp = lmp_scenarios[e_time_periods.index(i)+1]
-                    psh_max.append((psh_gen[s, i, j] - psh_pump[s, i, j]) * lac_lmp * p_s)
+                lac_lmp = lmp_scenarios[e_time_periods.index(i)+1]   #why这里加上1
+                psh_max.append((psh_gen[s, i, j] - psh_pump[s, i, j]) * lac_lmp * p_s)
     obj = quicksum(psh_max)
 
     ################################### Solve Model ####################################
@@ -194,20 +194,6 @@ def Perfect_Opt(Total_hour, Input_folder,Output_folder,date, RT_DA ,probabilisti
     for v in model.getVars():
         print("%s %f" % (v.Varname, v.X))
 
-    ################################### return solutions ####################################
-
-    # SOC0=[]
-    # filename = 'DECO_prd_dataframe_Perfect_October 1521 2019'+'.csv'
-    # with open(filename, 'w') as wf:
-    #     wf.write('Num_Period,Reservoir_Name,SOC\n')
-    #     for v in [v for v in model.getVars() if ('Reservoir' in v.Varname and 'E0' in v.Varname)]:
-    #         if 'Reservoir' in v.Varname:
-    #             soc=v.X
-    #             SOC0.append(soc)
-    #             time='T'+str(Total_hour)
-    #             name=v.Varname[3:13]
-    #             st = time + ',' + '%s,%.1f' % (name,soc) + '\n'
-    #             wf.write(st)
 
     ## add psh
     psh0=[]
@@ -226,17 +212,22 @@ def Perfect_Opt(Total_hour, Input_folder,Output_folder,date, RT_DA ,probabilisti
 
     ## add soc
     SOC=[]
+
     for v in [v for v in model.getVars() if 'PSH_gen' in v.Varname]:
         psh = v.X
         psh_last_window_gen.append(psh)
+
     for v in [v for v in model.getVars() if 'PSH_pump' in v.Varname]:
         psh = v.X
         psh_last_window_pump.append(psh)
+
     for i in range(len(psh_last_window_gen)):
         PSH.append(psh_last_window_gen[i]-psh_last_window_pump[i])
+
     for v in [v for v in model.getVars() if 'E' in v.Varname]:
         soc = v.X
         SOC.append(soc)
+
+
     return SOC, PSH, lmp_scenarios
-    # else:
-    #     return SOC0, PSH0, lmp_scenarios
+
