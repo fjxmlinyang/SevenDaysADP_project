@@ -30,7 +30,7 @@ class RL_Kernel():
         #time_1 = time.time()
         self.Curr_Scenario_Cost_Total = []
         self.start = 1
-        self.end = 500
+        self.end = 10
         for curr_scenario in range(self.start, self.end):
             self.Curr_Scenario_Price_Total = []
             self.PSH_Results = []
@@ -101,8 +101,8 @@ class RL_Kernel():
             {'Price_Results_' + str(self.curr_scenario): self.Curr_Scenario_Price_Total[0], \
              'SOC_Results_' + str(self.curr_scenario): self.SOC_Results, \
              'PSH_Results_' + str(self.curr_scenario): self.PSH_Results, \
-             'hours23_Gen_Results' + str(self.curr_scenario): self.hours23_Gen_Results, \
-             'hours23_Pump_Results' + str(self.curr_scenario): self.hours23_Pump_Results})
+             'hours23_Gen_Results_' + str(self.curr_scenario): self.hours23_Gen_Results, \
+             'hours23_Pump_Results_' + str(self.curr_scenario): self.hours23_Pump_Results})
         if self.curr_scenario == self.start:
             self.df_total = self.df
         else:
@@ -114,12 +114,6 @@ class RL_Kernel():
         ##calculate total cost
         self.Curr_Scenario_Cost_Total.append(self.curr_scenario_cost_total)
 
-        # self.df = pd.DataFrame(
-        #     {'Price_Results_' + str(self.curr_scenario): self.Curr_Scenario_Price_Total[0], \
-        #      'SOC_Results_' + str(self.curr_scenario): self.SOC_Results, \
-        #      'PSH_Results_' + str(self.curr_scenario): self.PSH_Results, \
-        #      'hours23_Gen_Results' + str(self.curr_scenario): self.hours23_Gen_Results, \
-        #      'hours23_Pump_Results' + str(self.curr_scenario): self.hours23_Pump_Results})
 
     def output_psh_soc(self):
         self.SOC_Results.append(self.curr_model.optimal_soc_sum)
@@ -156,8 +150,8 @@ class RL_Kernel():
         self.e_system.set_up_parameter()
 
         ####add initital soc for everyday
-        if self.curr_model_para.day_period != 1:
-            temp = str(self.curr_model_para.day_period-1)
+        if self.curr_model_para.curr_day != 0:
+            temp = str(self.curr_model_para.curr_day)
             filename = './Output_Curve/LAC_Solution_System_SOC_'+ temp +'.csv'
             Data = pd.read_csv(filename)
             df = pd.DataFrame(Data)
@@ -286,13 +280,13 @@ class RL_Kernel():
             # right_cod = distance > 0 and (abs(distance) < (self.day_period - self.curr_day) * float(
             #     self.psh_system.parameter['GenMax']) / (float(self.psh_system.parameter['GenEfficiency']) + beta))
 #self.day_period这个要注意！！！！！！还没改
-            left_cod = distance <= 0 and (abs(distance) < (self.day_period - self.day_period) * float(
+            left_cod = distance <= 0 and (abs(distance) < (self.day_period - self.curr_day) * float(
                 self.psh_system.parameter['PumpMax']) * (float(self.psh_system.parameter['PumpEfficiency']) - beta))
-            right_cod = distance > 0 and (abs(distance) < (self.day_period - self.day_period) * float(
+            right_cod = distance > 0 and (abs(distance) < (self.day_period - self.curr_day) * float(
                 self.psh_system.parameter['GenMax']) / (float(self.psh_system.parameter['GenEfficiency']) + beta))
             if left_cod or right_cod:
                 # if left_value < 0 and right_value > 0:
-                point_y = 0  # self.calculate_new_soc(value)
+                point_y = 0
                 check = 1
             else:
                 # point_y = 0
