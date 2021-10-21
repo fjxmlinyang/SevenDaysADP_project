@@ -47,7 +47,7 @@ class OptModelSetUp():
         print(type(self.e_system.parameter['EStart']))
         print(type(self.e['Reservoir1']))
         for k in self.e_system.parameter['EName']:
-            for i in range(self.one_day_period-1):
+            for i in range(self.one_day_period):
                 if i == 0:
                     LHS = self.e_prev[i][k] + grb.quicksum(self.psh_gen_prev[i][j] / self.psh_system.parameter['GenEfficiency'] for j in self.psh_system.parameter['PSHName']) \
                                                   - grb.quicksum(self.psh_pump_prev[i][j] * self.psh_system.parameter['PumpEfficiency'] for j in self.psh_system.parameter['PSHName'])
@@ -241,6 +241,10 @@ class OptModelSetUp():
         self.optimal_soc_sum = sum(self.optimal_soc)
         print(self.optimal_soc_sum)
 
+        self.optimal_hour23_soc = []
+        for v in [v for v in self.gur_model.getVars() if 'first_23_e_' in v.Varname]:
+            psh = v.X
+            self.optimal_hour23_soc.append(psh)
 
 
 
@@ -288,12 +292,18 @@ class OptModelSetUp():
     def get_curr_cost(self):
         #put the soc_sum in, we get the profit
         point_profit = []
-        point_price = 0
-        for s in range(self.lmp.Nlmp_s):
-            point_profit.append((self.optimal_psh_gen_sum - self.optimal_psh_pump_sum) * self.lmp.lmp_scenarios)
-            point_price = self.lmp.lmp_scenarios
+        #point_price = 0
+        point_price = self.lmp.lmp_scenarios
+        #for s in range(self.lmp.Nlmp_s):
+
+
+        point_profit.append((self.optimal_psh_gen_sum - self.optimal_psh_pump_sum) * self.lmp.lmp_scenarios)
+        for i in range(self.one_day_period):
+            point_profit.append((self.optimal_hour23_psh_gen[i] - self.optimal_hour23_psh_pump[i]) * self.lmp.lmp_scenarios_prev[i])
         self.curr_price = point_price
+        self.hour23_price = self.lmp.lmp_scenarios_prev
         self.curr_cost = sum(point_profit)
+
 
 
     def output_optimal(self):
