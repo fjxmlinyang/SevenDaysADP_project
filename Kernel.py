@@ -133,9 +133,7 @@ class RL_Kernel():
         else:
             self.PSH_Results.append(-self.curr_model.optimal_psh_pump_sum)
 
-        ##output curr cost #这里就全部加起来了
-        self.curr_scenario_cost_total += self.curr_model.curr_cost
-        #
+
         self.curr_price_total.append(self.curr_model.curr_price)
 
         #add 23hours situation
@@ -143,6 +141,10 @@ class RL_Kernel():
         self.hours23_Pump_Results.append(self.curr_model.optimal_hour23_psh_pump)
 
         self.calculate_24hour_psh_soc_price()
+
+
+        ##current cost
+        self.curr_scenario_cost_total += self.curr_model.curr_cost
 
     def calculate_24hour_psh_soc_price(self):
         #calculate 24hours psh
