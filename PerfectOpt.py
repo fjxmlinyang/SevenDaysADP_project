@@ -11,10 +11,10 @@ def Perfect_Opt(Input_folder, scenario):
     filename = Input_folder + '/PSH.csv'
     Data = pd.read_csv(filename)
     df=pd.DataFrame(Data)
-    PSHmin_g = df['GenMin']
-    PSHmax_g = df['GenMax']
-    PSHmin_p = df['PumpMin']
-    PSHmax_p = df['PumpMax']
+    PSHmin_g = float(df['GenMin'])
+    PSHmax_g = float(df['GenMax'])
+    PSHmin_p = float(df['PumpMin'])
+    PSHmax_p = float(df['PumpMax'])
     PSHefficiency = list(df['Efficiency'])
     PSHname = list(df['Name'])
 
@@ -22,11 +22,11 @@ def Perfect_Opt(Input_folder, scenario):
     filename = Input_folder + '/Reservoir.csv'
     Data = pd.read_csv(filename)
     df=pd.DataFrame(Data)
-    Emin = df['Min']
-    Emax = df['Max']
+    Emin = float(df['Min'])
+    Emax = float(df['Max'])
+    Edayend= float(df['End'])
+    Estart = float(df['Start'])
     Ename = df['Name']
-    Edayend= df['End']
-    Estart = df['Start']
 
 
     ##read price
@@ -52,53 +52,16 @@ def Perfect_Opt(Input_folder, scenario):
 
     ################################### Build Model ####################################
     model = Model('DAMarket')
-    ### define variables
-    psh_max_g={}
-    psh_min_g={}
-    psh_max_p = {}
-    psh_min_p = {}
-    e_max={}
-    e_min={}
-
-    for i in e_time_periods:
-        for k in PSHname:
-            for s in range(Nlmp_s):
-                psh_max_g[(s, i, k)] = list(PSHmax_g)[list(PSHname).index(k)]
-                psh_min_g[(s, i, k)] = list(PSHmin_g)[list(PSHname).index(k)]
-                psh_max_p[(s, i, k)] = list(PSHmax_p)[list(PSHname).index(k)]
-                psh_min_p[(s, i, k)] = list(PSHmin_p)[list(PSHname).index(k)]
-    for i in e_time_periods:
-        for f in Ename:
-            for s in range(Nlmp_s):
-                e_max[(s, i, f)] = list(Emax)[list(Ename).index(f)]
-                e_min[(s, i, f)] = list(Emin)[list(Ename).index(f)]
-
-    e_max_inf = {}
-    e_min_inf = {}
-    psh_max_inf = {}
-    psh_min_inf = {}
-
-    for i in e_time_periods:
-        for k in PSHname:
-            for s in range(Nlmp_s):
-                psh_max_inf[(s, i, k)] = float('inf')
-                psh_min_inf[(s, i, k)] = -float('inf')
-
-    for i in e_time_periods:
-        for f in Ename:
-            for s in range(Nlmp_s):
-                e_max_inf[(s, i, f)] = float('inf')
-                e_min_inf[(s, i, f)] = -float('inf')
 
     # psh0 and e0 are the first stage deterministic variables, while psh and e are stochastic variables.
     psh0_gen= model.addVars(list(PSHname), ub=float('inf'), lb=-float('inf'), name='PSH0_gen')
     psh0_pump= model.addVars(list(PSHname), ub=float('inf'), lb=-float('inf'), name='PSH0_pump')
 
-    psh_gen = model.addVars(range(Nlmp_s), e_time_periods, list(PSHname), ub = psh_max_inf, lb = psh_min_inf, name = 'PSH_gen')
-    psh_pump = model.addVars(range(Nlmp_s), e_time_periods, list(PSHname), ub = psh_max_inf, lb = psh_min_inf, name = 'PSH_pump')
+    psh_gen = model.addVars(range(Nlmp_s), e_time_periods, list(PSHname),  ub = float('inf'), lb = -float('inf'), name = 'PSH_gen')
+    psh_pump = model.addVars(range(Nlmp_s), e_time_periods, list(PSHname),  ub = float('inf'), lb = -float('inf'), name = 'PSH_pump')
 
     e0 = model.addVars(list(Ename), ub = float('inf'), lb = -float('inf'), name='E0')
-    e = model.addVars(range(Nlmp_s), e_time_periods, list(Ename), ub=e_max_inf, lb=e_min_inf, name='E')
+    e = model.addVars(range(Nlmp_s), e_time_periods, list(Ename),  ub = float('inf'), lb = -float('inf'), name='E')
 
     model.update()
 
@@ -108,39 +71,37 @@ def Perfect_Opt(Input_folder, scenario):
     for j in Ename:
         print('Estart:', float(Estart))
         LHS = e0[j] + grb.quicksum(psh0_gen[j]/PSHefficiency[PSHname.index(j)] for j in PSHname)\
-              - grb.quicksum(psh0_pump[j]*PSHefficiency[PSHname.index(j)] for j in PSHname) - float(Estart)
+              - grb.quicksum(psh0_pump[j]*PSHefficiency[PSHname.index(j)] for j in PSHname) - Estart
         RHS = 0
         print(LHS, RHS)
         model.addConstr(LHS == RHS, name='%s_%s' % ('SOC0', j))
+
+
     # state of charge
     for i in e_time_periods:
         time_id = e_time_periods.index(i)
         if time_id == 0: #相当于除了e0的第一个，需要和e0交换
             for s in range(Nlmp_s):
                 for j in Ename:
-                    print('Estart:',float(Estart))
-                    LHS = e[s, i, j] + grb.quicksum(psh_gen[s,i,j]/PSHefficiency[PSHname.index(j)] for j in PSHname)\
+                    LHS = e[s, i, j] + grb.quicksum(psh_gen[s, i, j]/PSHefficiency[PSHname.index(j)] for j in PSHname)\
                     - grb.quicksum(psh_pump[s, i, j] * PSHefficiency[PSHname.index(j)] for j in PSHname)- e0[j]
                     RHS = 0
-                    print(LHS,RHS)
                     model.addConstr(LHS == RHS, name='%s_%s_%d_%d' % ('SOC', j, time_id, s))
-
         else:
             for s in range(Nlmp_s):
-                time_previous = e_time_periods[time_id-1]
                 for j in Ename:
+                    time_previous = e_time_periods[time_id - 1]
                     LHS=e[s,i,j] + grb.quicksum(psh_gen[s, i, j]/PSHefficiency[PSHname.index(j)] for j in PSHname)\
                     - grb.quicksum(psh_pump[s, i, j]*PSHefficiency[PSHname.index(j)] for j in PSHname)-e[s, time_previous, j]
                     RHS= 0
-                    print(LHS, RHS)
                     model.addConstr(LHS == RHS, name='%s_%s_%d_%d' % ('SOC', j, time_id, s))
-                if time_id == len(e_time_periods) - 1:
+            if time_id == len(e_time_periods) - 1: #这个必须得在这里，因为这是最后一个多加了一个
+                for s in range(Nlmp_s):
                     for j in Ename:
-                        print('Edayend:', Edayend)
                         LHS = Edayend - e[s, i, j]
                         RHS = 0
-                        print(LHS,RHS)
-                        model.addConstr(LHS == RHS, name='%s_%s_%d_%d' % ('SOC', j, len(e_time_periods),s))
+                        model.addConstr(LHS == RHS, name='%s_%s_%d_%d' % ('SOC', j, len(e_time_periods), s))
+
 
     # Upper and lower bounds
     for j in PSHname:
@@ -154,13 +115,13 @@ def Perfect_Opt(Input_folder, scenario):
     for s in range(Nlmp_s):
         for i in e_time_periods:
             for j in PSHname:
-                model.addConstr(psh_gen[s, i, j] <= psh_max_g[s, i, j], name='%s_%s_%s_%s' % ('psh_gen_max',s, i, j))
-                model.addConstr(psh_gen[s, i, j] >= psh_min_g[s, i, j], name='%s_%s_%s_%s' % ('psh_gen_min',s, i, j))
-                model.addConstr(psh_pump[s, i, j] <= psh_max_p[s, i, j], name='%s_%s_%s_%s' % ('psh_pump_max', s, i, j))
-                model.addConstr(psh_pump[s, i, j] >= psh_min_p[s, i, j], name='%s_%s_%s_%s' % ('psh_pump_min', s, i, j))
+                model.addConstr(psh_gen[s, i, j] <= PSHmax_g, name='%s_%s_%s_%s' % ('psh_gen_max',s, i, j))
+                model.addConstr(psh_gen[s, i, j] >= PSHmin_g, name='%s_%s_%s_%s' % ('psh_gen_min',s, i, j))
+                model.addConstr(psh_pump[s, i, j] <= PSHmax_p, name='%s_%s_%s_%s' % ('psh_pump_max', s, i, j))
+                model.addConstr(psh_pump[s, i, j] >= PSHmin_p, name='%s_%s_%s_%s' % ('psh_pump_min', s, i, j))
             for k in Ename:
-                model.addConstr(e[s, i, k] <= e_max[s, i, k], name='%s_%s_%s_%s' % ('e_max',s, i, k))
-                model.addConstr(e[s, i, k] >= e_min[s, i, k], name='%s_%s_%s_%s' % ('e_min',s, i, k))
+                model.addConstr(e[s, i, k] <= Emax, name='%s_%s_%s_%s' % ('e_max',s, i, k))
+                model.addConstr(e[s, i, k] >= Emin, name='%s_%s_%s_%s' % ('e_min',s, i, k))
 
     ### Objective function
     psh_max=[]
@@ -169,7 +130,8 @@ def Perfect_Opt(Input_folder, scenario):
         for j in PSHname:
             psh_max.append((psh0_gen[j] - psh0_pump[j]) * lmp_scenarios[0] * p_s)
             for i in e_time_periods:
-                lac_lmp = lmp_scenarios[e_time_periods.index(i)+1]   #why这里加上1
+                _temp = e_time_periods.index(i)+1
+                lac_lmp = lmp_scenarios[_temp]   #why这里加上1
                 psh_max.append((psh_gen[s, i, j] - psh_pump[s, i, j]) * lac_lmp * p_s)
     obj = quicksum(psh_max)
 
