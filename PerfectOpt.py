@@ -3,8 +3,8 @@ from gurobipy import *
 import gurobipy as grb
 import matplotlib.pyplot as plt
 import numpy as np
-def Perfect_Opt(Total_hour, Input_folder,Output_folder,date, RT_DA ,probabilistic, time_total, scenario):
-    print('################################## LAC_PSH_profit_max #', Total_hour, 'probabilistic=',probabilistic,' ##################################')
+def Perfect_Opt(Input_folder, scenario):
+    print('################################## LAC_PSH_profit_max ###################################')
     ################################### Read Data ####################################
 
     ##read PSH
@@ -25,7 +25,7 @@ def Perfect_Opt(Total_hour, Input_folder,Output_folder,date, RT_DA ,probabilisti
     Emin = df['Min']
     Emax = df['Max']
     Ename = df['Name']
-    Edayend= float(df['End'])
+    Edayend= df['End']
     Estart = df['Start']
 
 
@@ -124,19 +124,13 @@ def Perfect_Opt(Total_hour, Input_folder,Output_folder,date, RT_DA ,probabilisti
                     RHS = 0
                     print(LHS,RHS)
                     model.addConstr(LHS == RHS, name='%s_%s_%d_%d' % ('SOC', j, time_id, s))
-                # if time_id == len(e_time_periods) - 1:
-                #     for j in Ename:
-                #         print('Edayend:', Edayend)
-                #         LHS = Edayend - e[s, i, j]
-                #         RHS = 0
-                #         print(LHS,RHS)
-                #         model.addConstr(LHS == RHS, name='%s_%s_%d_%d' % ('SOC', j, len(e_time_periods),s))
+
         else:
             for s in range(Nlmp_s):
-                time_previous=e_time_periods[time_id-1]
+                time_previous = e_time_periods[time_id-1]
                 for j in Ename:
-                    LHS=e[s,i,j] + grb.quicksum(psh_gen[s,i,j]/PSHefficiency[PSHname.index(j)] for j in PSHname)\
-                    - grb.quicksum(psh_pump[s,i,j]*PSHefficiency[PSHname.index(j)] for j in PSHname)-e[s,time_previous,j]
+                    LHS=e[s,i,j] + grb.quicksum(psh_gen[s, i, j]/PSHefficiency[PSHname.index(j)] for j in PSHname)\
+                    - grb.quicksum(psh_pump[s, i, j]*PSHefficiency[PSHname.index(j)] for j in PSHname)-e[s, time_previous, j]
                     RHS= 0
                     print(LHS, RHS)
                     model.addConstr(LHS == RHS, name='%s_%s_%d_%d' % ('SOC', j, time_id, s))
