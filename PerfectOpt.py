@@ -95,7 +95,7 @@ def Perfect_Opt(Input_folder, scenario):
                     - grb.quicksum(psh_pump[s, i, j]*PSHefficiency[PSHname.index(j)] for j in PSHname)-e[s, time_previous, j]
                     RHS= 0
                     model.addConstr(LHS == RHS, name='%s_%s_%d_%d' % ('SOC', j, time_id, s))
-            if time_id == len(e_time_periods) - 1: #这个必须得在这里，因为这是最后一个多加了一个
+            if time_id == len(e_time_periods)-1: #这个必须得在这里，因为这是最后一个多加了一个
                 for s in range(Nlmp_s):
                     for j in Ename:
                         LHS = Edayend - e[s, i, j]
