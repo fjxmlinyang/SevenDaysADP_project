@@ -30,7 +30,7 @@ class RL_Kernel():
         #time_1 = time.time()
         self.Curr_Scenario_Cost_Total = []
         self.start = 1
-        self.end = 500
+        self.end = 2000
         for curr_scenario in range(self.start, self.end):
             self.Curr_Scenario_Price_Total = []
             self.SOC_Results = []
